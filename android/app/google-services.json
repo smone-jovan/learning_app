@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "289738527788",
+    "project_id": "learning-app-flutter-13319",
+    "storage_bucket": "learning-app-flutter-13319.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:289738527788:android:703f062e76eff02aaf2d89",
+        "android_client_info": {
+          "package_name": "com.Jali.learningapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcH73zuT-H1JZLRItrUF8NuZZyggia_KA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:289738527788:android:2bae5c63a34c16a8af2d89",
+        "android_client_info": {
+          "package_name": "com.example.learning_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcH73zuT-H1JZLRItrUF8NuZZyggia_KA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

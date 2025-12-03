@@ -1,0 +1,67 @@
+name: learning_app
+description: "Aplikasi pembelajaran gamifikasi dengan Flutter & Firebase"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management & Storage
+  get: ^4.6.6
+  get_storage: ^2.1.1
+  shared_preferences: ^2.2.2
+
+  # Firebase - UPDATED versions
+  firebase_core: ^4.2.1          # ✅ Updated dari 2.24.2
+  firebase_auth: ^6.1.2          # ✅ Updated dari 4.16.0
+  cloud_firestore: ^6.1.0        # ✅ Updated dari 4.14.0
+  firebase_storage: ^13.0.4      # ✅ ADDED - missing in original
+
+  # Networking
+  connectivity_plus: ^7.0.0      # ✅ Updated dari 5.0.2
+
+  # UI & Styling
+  google_fonts: ^6.2.1           # ✅ Updated dari 6.1.0
+  flutter_svg: ^2.0.10           # ✅ Updated dari 2.0.9
+  cached_network_image: ^3.4.1   # ✅ Updated dari 3.3.1
+  shimmer: ^3.0.0
+  lottie: ^3.1.2                 # ✅ Updated dari 3.0.0
+  flutter_staggered_animations: ^1.1.1
+  percent_indicator: ^4.2.3
+  circular_countdown_timer: ^0.2.4
+
+  # Forms & Validation
+  form_field_validator: ^1.1.0
+  intl: ^0.20.2
+  timeago: ^3.7.0                # ✅ Updated dari 3.6.0
+
+  # Notifications
+  flutter_local_notifications: ^19.5.0  # ✅ Updated dari 16.3.2
+  fluttertoast: ^9.0.0           # ✅ Updated dari 8.2.4
+
+  # Image Handling - FIXED VERSIONS
+  image_picker: ^1.1.2           # ✅ Updated dari 1.0.7
+  image_cropper: ^11.0.0          # ✅ FIXED - ini yang paling penting!
+
+  # Utilities
+  uuid: ^4.5.1                   # ✅ Updated dari 4.3.3
+  url_launcher: ^6.3.1           # ✅ Updated dari 6.2.4
+  cupertino_icons: ^1.0.8        # ✅ Updated dari 1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0          # ✅ ADDED - untuk code quality
+
+flutter:
+  uses-material-design: true
+
+  # Comment out assets yang belum ada
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
+  #   - assets/lottie/
