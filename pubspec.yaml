@@ -57,7 +57,13 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0          # ✅ ADDED - untuk code quality
 
+
+# WEB SPECIFIC - ADD THESE
+  web: ^1.1.1
+
+
 flutter:
+
   uses-material-design: true
 
   # Comment out assets yang belum ada

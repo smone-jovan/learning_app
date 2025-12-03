@@ -14,20 +14,17 @@ class MainPage extends GetView<MainController> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ FIX: Define pages as method untuk avoid const error
-    final pages = <Widget>[
-      HomePage(),
-      CoursesPage(),
-      LeaderboardPage(),
-      ProfilePage(),
-    ];
-
     return Scaffold(
       body: Obx(() {
         final index = controller.currentIndex.value;
         return IndexedStack(
           index: index,
-          children: pages,
+          children: [
+            _buildPage('/home'),
+            _buildPage('/courses'),
+            _buildPage('/leaderboard'),
+            _buildPage('/profile'),
+          ],
         );
       }),
       bottomNavigationBar: Obx(
@@ -63,4 +60,21 @@ class MainPage extends GetView<MainController> {
       ),
     );
   }
+
+  Widget _buildPage(String route) {
+    switch (route) {
+      case '/home':
+        return const HomePage();
+      case '/courses':
+        return const CoursesPage();
+      case '/leaderboard':
+        return const LeaderboardPage();
+      case '/profile':
+        return const ProfilePage();
+      default:
+        return const HomePage();
+    }
+  }
 }
+
+// Import pages at top of file

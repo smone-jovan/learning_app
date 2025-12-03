@@ -7,8 +7,8 @@ import 'package:learning_app/app/data/services/local_storage_services.dart';
 import '../../app/routes/app_routes.dart';
 
 class AuthController extends GetxController {
-  final AuthRepository _authRepository = AuthRepository();
-  final UserRepository _userRepository = UserRepository();
+  late final AuthRepository _authRepository;
+  late final UserRepository _userRepository;
 
   // Observable user
   final Rx<User?> firebaseUser = Rx<User?>(null);
@@ -25,6 +25,11 @@ class AuthController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // ✅ Lazy initialize repositories
+    _authRepository = AuthRepository();
+    _userRepository = UserRepository();
+    print('✅ AuthController initialized');
+
     // Bind Firebase auth state
     firebaseUser.bindStream(_authRepository.authStateChanges);
 

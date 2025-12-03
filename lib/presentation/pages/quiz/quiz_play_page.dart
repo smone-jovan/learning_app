@@ -4,7 +4,7 @@ import 'package:learning_app/core/constant/colors.dart';
 import '../../controllers/quiz_controller.dart';
 
 class QuizPlayPage extends GetView<QuizController> {
-  const QuizPlayPage({Key? key}) : super(key: key);
+  const QuizPlayPage({super.key});
 
   @override
   Widget build(BuildContext context) {

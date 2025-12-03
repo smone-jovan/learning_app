@@ -20,7 +20,7 @@ class AppPages {
   static final pages = [
     GetPage(
       name: AppRoutes.SPLASH,
-      page: () => const SplashPage(),  // ✅ Function returning Widget
+      page: () => SplashPage(),  // ✅ Function returning Widget
       binding: SplashBinding(),
     ),
     GetPage(

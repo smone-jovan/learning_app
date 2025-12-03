@@ -431,7 +431,6 @@ class _Badge extends StatelessWidget {
   final IconData? icon;
 
   const _Badge({
-    super.key,
     required this.label,
     required this.color,
     this.icon,
@@ -469,7 +468,7 @@ class _Badge extends StatelessWidget {
 class _InfoSection extends StatelessWidget {
   final List<Widget> children;
 
-  const _InfoSection({super.key, required this.children});
+  const _InfoSection({required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -499,7 +498,6 @@ class _InfoItem extends StatelessWidget {
   final Color? valueColor;
 
   const _InfoItem({
-    super.key,
     required this.icon,
     required this.label,
     required this.value,

@@ -4,7 +4,6 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // ✅ Add google-services here instead
         classpath("com.google.gms:google-services:4.4.4")
     }
 }
@@ -34,8 +33,3 @@ subprojects {
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
-
-// ✅ REMOVE THE ENTIRE plugins BLOCK BELOW (causing conflict)
-// plugins {
-//     id("com.google.gms.google-services") version "4.4.4" apply false
-// }
