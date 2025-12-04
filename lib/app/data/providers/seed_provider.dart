@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
-import '../../core/constant/firebase_collections.dart';
+import '../../../core/constant/firebase_collections.dart';
 
 /// Provider untuk seeding initial data ke Firestore
 class SeedProvider {
