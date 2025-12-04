@@ -8,7 +8,7 @@ import 'package:learning_app/app/data/repositories/user_repository.dart';
 import 'package:learning_app/app/routes/app_routes.dart';
 import 'package:uuid/uuid.dart';
 import 'auth_controller.dart';
-import 'home_controller.dart'; // ✅ TAMBAH: Import HomeController
+import 'home_controller.dart';
 import '../pages/quiz/quiz_result_page.dart';
 
 class QuizController extends GetxController {
@@ -36,6 +36,7 @@ class QuizController extends GetxController {
 
   // Loading state
   final RxBool isLoading = false.obs;
+  final RxBool isRefreshing = false.obs; // 🆕 TAMBAH: For pull-to-refresh
 
   // Timer
   Timer? _quizTimer;
@@ -52,6 +53,35 @@ class QuizController extends GetxController {
     super.onClose();
   }
 
+  /// 🆕 NEW: Calculate level based on total points
+  int calculateLevel(int points) {
+    // Level progression:
+    // Lv 1: 0-99 points
+    // Lv 2: 100-299 points
+    // Lv 3: 300-599 points
+    // Lv 4: 600-999 points
+    // Lv 5: 1000-1499 points
+    // Formula: level = sqrt(points / 100) + 1
+    
+    if (points < 100) return 1;
+    if (points < 300) return 2;
+    if (points < 600) return 3;
+    if (points < 1000) return 4;
+    if (points < 1500) return 5;
+    if (points < 2100) return 6;
+    if (points < 2800) return 7;
+    if (points < 3600) return 8;
+    if (points < 4500) return 9;
+    return 10; // Max level
+  }
+
+  /// 🆕 NEW: Get points needed for next level
+  int getPointsForNextLevel(int currentLevel) {
+    final levelThresholds = [0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500];
+    if (currentLevel >= 10) return 0; // Max level
+    return levelThresholds[currentLevel];
+  }
+
   /// Load all quizzes - ✅ FILTER HIDDEN QUIZZES
   Future<void> loadQuizzes() async {
     try {
@@ -62,8 +92,10 @@ class QuizController extends GetxController {
       quizzes.value = allQuizzes
           .where((quiz) => quiz.isHidden != true)
           .toList();
+      
+      print('📊 Loaded ${quizzes.length} quizzes (hidden filtered)');
     } catch (e) {
-      print('Error loading quizzes: $e');
+      print('❌ Error loading quizzes: $e');
       Get.snackbar(
         'Error',
         'Failed to load quizzes',
@@ -71,6 +103,24 @@ class QuizController extends GetxController {
       );
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// 🆕 NEW: Refresh quizzes (for pull-to-refresh)
+  Future<void> refreshQuizzes() async {
+    try {
+      isRefreshing.value = true;
+      await loadQuizzes();
+      Get.snackbar(
+        'Success',
+        'Quizzes refreshed',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: Duration(seconds: 2),
+      );
+    } catch (e) {
+      print('❌ Error refreshing quizzes: $e');
+    } finally {
+      isRefreshing.value = false;
     }
   }
 
@@ -228,7 +278,6 @@ class QuizController extends GetxController {
         quizId: quizId,
       );
       
-      // Check if any previous attempt has isPassed = true
       return attempts.any((attempt) => attempt.isPassed == true);
     } catch (e) {
       print('Error checking previous passes: $e');
@@ -236,7 +285,7 @@ class QuizController extends GetxController {
     }
   }
 
-  /// Submit quiz - ✅ UPDATED: Award rewards ONLY on FIRST PASS with detailed logging + reload user data
+  /// Submit quiz - ✅ UPDATED: Award rewards ONLY on FIRST PASS + Auto-update level
   Future<void> submitQuiz() async {
     try {
       isLoading.value = true;
@@ -277,12 +326,10 @@ class QuizController extends GetxController {
         return;
       }
 
-      // ✅ NEW: Check if user has passed this quiz before
       print('🔍 Checking if user has passed quiz before...');
       final hasPassedBefore = await hasEverPassedQuiz(user.uid, quiz.quizId);
       print('📊 hasPassedBefore: $hasPassedBefore');
       
-      // ✅ NEW: Award rewards ONLY if passing for the FIRST TIME
       final bool shouldAwardRewards = isPassed && !hasPassedBefore;
       print('🎁 shouldAwardRewards: $shouldAwardRewards (isPassed: $isPassed, hasPassedBefore: $hasPassedBefore)');
       
@@ -312,7 +359,6 @@ class QuizController extends GetxController {
       await _quizProvider.saveQuizAttempt(attempt);
       print('✅ Quiz attempt saved successfully');
 
-      // ✅ NEW: Update user stats ONLY if rewards are awarded
       if (shouldAwardRewards) {
         print('🎯 Updating user stats with rewards...');
         print('📍 User ID: ${user.uid}');
@@ -320,16 +366,12 @@ class QuizController extends GetxController {
         print('🪙 Coins to add: $coinsEarned');
         
         try {
-          // Update points
-          print('⏳ Calling updatePoints...');
           final pointsUpdated = await _userRepository.updatePoints(
             userId: user.uid,
             points: pointsEarned,
           );
           print('✅ updatePoints result: $pointsUpdated');
           
-          // Update coins
-          print('⏳ Calling updateCoins...');
           final coinsUpdated = await _userRepository.updateCoins(
             userId: user.uid,
             coins: coinsEarned,
@@ -340,12 +382,42 @@ class QuizController extends GetxController {
             print('🎉 REWARDS SUCCESSFULLY UPDATED!');
             print('✅ Total rewards earned: $pointsEarned points, $coinsEarned coins');
             
-            // ✅ FIX: Reload user data to update UI
+            // 🆕 NEW: Calculate and update level
+            await authController.loadUserData();
+            final currentUser = authController.userModel.value;
+            
+            if (currentUser != null) {
+              final currentPoints = currentUser.points ?? 0;
+              final oldLevel = currentUser.level ?? 1;
+              final newLevel = calculateLevel(currentPoints);
+              
+              print('🎮 Level check: points=$currentPoints, oldLevel=$oldLevel, newLevel=$newLevel');
+              
+              if (newLevel > oldLevel) {
+                print('🎆 LEVEL UP! $oldLevel → $newLevel');
+                
+                // Update level di Firestore
+                await _userRepository.updateUser(
+                  userId: user.uid,
+                  data: {'level': newLevel},
+                );
+                
+                // Show level up notification
+                Get.snackbar(
+                  '🎆 Level Up!',
+                  'Congratulations! You are now Level $newLevel',
+                  snackPosition: SnackPosition.TOP,
+                  duration: Duration(seconds: 4),
+                  backgroundColor: Get.theme.primaryColor,
+                  colorText: Get.theme.colorScheme.onPrimary,
+                );
+              }
+            }
+            
             print('🔄 Reloading user data to refresh UI...');
             await authController.loadUserData();
             print('✅ User data reloaded successfully');
             
-            // ✅ TAMBAH: Force refresh HomeController juga
             try {
               final homeController = Get.find<HomeController>();
               print('🔄 Force reloading HomeController profile...');
@@ -367,13 +439,12 @@ class QuizController extends GetxController {
         print('❌ Quiz not passed, no rewards given');
       }
 
-      // ✅ Use Get.off instead of Get.offNamed to keep MainPage stack
       Get.off(
         () => const QuizResultPage(),
         arguments: {
           'attempt': attempt,
           'quiz': quiz,
-          'isFirstTimePass': shouldAwardRewards, // ✅ NEW: Track if this is first-time pass
+          'isFirstTimePass': shouldAwardRewards,
         },
         routeName: AppRoutes.QUIZ_RESULT,
       );
@@ -390,9 +461,8 @@ class QuizController extends GetxController {
     }
   }
 
-  /// Retry quiz - ✅ Fixed to prevent controller disposal
+  /// Retry quiz
   void retryQuiz(String quizId) {
-    // Reset quiz state
     isQuizStarted.value = false;
     currentQuestionIndex.value = 0;
     userAnswers.clear();
@@ -400,9 +470,7 @@ class QuizController extends GetxController {
     _quizTimer?.cancel();
     remainingTime.value = 0;
 
-    // ✅ Navigate back to quiz play WITHOUT removing MainPage
-    // This keeps QuizController alive
-    Get.back(); // Close result page
+    Get.back();
     Get.toNamed(
       AppRoutes.QUIZ_SESSION,
       arguments: {'quizId': quizId},
@@ -419,7 +487,7 @@ class QuizController extends GetxController {
     selectedDifficulty.value = difficulty;
   }
 
-  /// Get filtered quizzes - ✅ ALREADY FILTERED HIDDEN
+  /// Get filtered quizzes
   List<QuizModel> get filteredQuizzes {
     var filtered = quizzes.toList();
 
