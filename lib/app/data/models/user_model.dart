@@ -10,6 +10,7 @@ class UserModel {
   final int? level;
   final int? currentStreak;
   final int? longestStreak;
+  final bool isAdmin; // ✅ TAMBAHAN - field admin
   final List<String>? enrolledCourses;
   final List<String>? completedQuizzes;
   final DateTime? createdAt;
@@ -25,6 +26,7 @@ class UserModel {
     this.level,
     this.currentStreak,
     this.longestStreak,
+    this.isAdmin = false, // ✅ Default false
     this.enrolledCourses,
     this.completedQuizzes,
     this.createdAt,
@@ -49,6 +51,7 @@ class UserModel {
       level: data['level'] as int? ?? 1,
       currentStreak: data['currentStreak'] as int? ?? 0,
       longestStreak: data['longestStreak'] as int? ?? 0,
+      isAdmin: data['isAdmin'] as bool? ?? false, // ✅ TAMBAHAN
       enrolledCourses: (data['enrolledCourses'] as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),
@@ -71,6 +74,7 @@ class UserModel {
       'level': level ?? 1,
       'currentStreak': currentStreak ?? 0,
       'longestStreak': longestStreak ?? 0,
+      'isAdmin': isAdmin, // ✅ TAMBAHAN
       'enrolledCourses': enrolledCourses ?? [],
       'completedQuizzes': completedQuizzes ?? [],
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
@@ -89,6 +93,7 @@ class UserModel {
     int? level,
     int? currentStreak,
     int? longestStreak,
+    bool? isAdmin, // ✅ TAMBAHAN
     List<String>? enrolledCourses,
     List<String>? completedQuizzes,
     DateTime? createdAt,
@@ -104,6 +109,7 @@ class UserModel {
       level: level ?? this.level,
       currentStreak: currentStreak ?? this.currentStreak,
       longestStreak: longestStreak ?? this.longestStreak,
+      isAdmin: isAdmin ?? this.isAdmin, // ✅ TAMBAHAN
       enrolledCourses: enrolledCourses ?? this.enrolledCourses,
       completedQuizzes: completedQuizzes ?? this.completedQuizzes,
       createdAt: createdAt ?? this.createdAt,
