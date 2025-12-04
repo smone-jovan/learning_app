@@ -64,6 +64,15 @@ class QuizModel {
 
   factory QuizModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    
+    // ✅ SAFE TIMESTAMP PARSING
+    DateTime? parseTimestamp(dynamic value) {
+      if (value == null) return null;
+      if (value is Timestamp) return value.toDate();
+      if (value is DateTime) return value;
+      return null;
+    }
+    
     return QuizModel(
       quizId: doc.id,
       title: data['title'] ?? '',
@@ -79,8 +88,9 @@ class QuizModel {
       thumbnailUrl: data['thumbnailUrl'],
       isPremium: data['isPremium'] ?? false,
       isHidden: data['isHidden'] ?? false, // ✅ NEW
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      // ✅ SAFE PARSING - fallback to DateTime.now() if null
+      createdAt: parseTimestamp(data['createdAt']) ?? DateTime.now(),
+      updatedAt: parseTimestamp(data['updatedAt']) ?? DateTime.now(),
       totalAttempts: data['totalAttempts'] ?? 0,
     );
   }
