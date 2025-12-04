@@ -23,10 +23,10 @@ class _AdminQuestionPageState extends State<AdminQuestionPage> {
   final _option2Controller = TextEditingController();
   final _option3Controller = TextEditingController();
   final _option4Controller = TextEditingController();
-  final _orderController = TextEditingController();
+  final _orderController = TextEditingController(text: '1');
   
   String? _selectedQuizId;
-  String _correctAnswer = 'A';
+  int _correctAnswerIndex = 0; // 0=A, 1=B, 2=C, 3=D
   String _selectedQuestionType = 'multiple_choice';
   bool _isLoading = false;
 
@@ -85,12 +85,27 @@ class _AdminQuestionPageState extends State<AdminQuestionPage> {
     setState(() => _isLoading = true);
 
     try {
-      final options = <String>[
-        _option1Controller.text.trim(),
-        _option2Controller.text.trim(),
-        _option3Controller.text.trim(),
-        _option4Controller.text.trim(),
-      ];
+      List<String> options = [];
+      String correctAnswer = '';
+
+      if (_selectedQuestionType == 'multiple_choice') {
+        // Build options array
+        options = [
+          _option1Controller.text.trim(),
+          _option2Controller.text.trim(),
+          _option3Controller.text.trim(),
+          _option4Controller.text.trim(),
+        ];
+
+        // ✅ FIX: Save actual option text as correct answer
+        correctAnswer = options[_correctAnswerIndex];
+      } else if (_selectedQuestionType == 'true_false') {
+        options = ['True', 'False'];
+        correctAnswer = options[_correctAnswerIndex];
+      } else {
+        // short_answer - no options
+        correctAnswer = _option1Controller.text.trim();
+      }
 
       final question = QuestionModel(
         questionId: const Uuid().v4(),
@@ -98,8 +113,10 @@ class _AdminQuestionPageState extends State<AdminQuestionPage> {
         type: _selectedQuestionType,
         questionText: _questionTextController.text.trim(),
         options: options,
-        correctAnswer: _correctAnswer,
-        explanation: _explanationController.text.trim(),
+        correctAnswer: correctAnswer,
+        explanation: _explanationController.text.trim().isEmpty 
+            ? null 
+            : _explanationController.text.trim(),
         order: int.tryParse(_orderController.text) ?? 1,
         createdAt: DateTime.now(),
       );
@@ -123,9 +140,9 @@ class _AdminQuestionPageState extends State<AdminQuestionPage> {
       _option2Controller.clear();
       _option3Controller.clear();
       _option4Controller.clear();
-      _orderController.clear();
+      _orderController.text = '1';
       setState(() {
-        _correctAnswer = 'A';
+        _correctAnswerIndex = 0;
         _selectedQuestionType = 'multiple_choice';
       });
     } catch (e) {
@@ -200,7 +217,10 @@ class _AdminQuestionPageState extends State<AdminQuestionPage> {
                               ))
                           .toList(),
                       onChanged: (value) {
-                        setState(() => _selectedQuestionType = value!);
+                        setState(() {
+                          _selectedQuestionType = value!;
+                          _correctAnswerIndex = 0;
+                        });
                       },
                     ),
                     const SizedBox(height: 16),
@@ -224,106 +244,11 @@ class _AdminQuestionPageState extends State<AdminQuestionPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Options
-                    Text(
-                      'Options',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
+                    // Options Section
+                    if (_selectedQuestionType == 'multiple_choice') ..._buildMultipleChoiceOptions(),
+                    if (_selectedQuestionType == 'true_false') ..._buildTrueFalseOptions(),
+                    if (_selectedQuestionType == 'short_answer') ..._buildShortAnswerOption(),
 
-                    // Option A
-                    TextFormField(
-                      controller: _option1Controller,
-                      decoration: const InputDecoration(
-                        labelText: 'Option A',
-                        border: OutlineInputBorder(),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter option A';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Option B
-                    TextFormField(
-                      controller: _option2Controller,
-                      decoration: const InputDecoration(
-                        labelText: 'Option B',
-                        border: OutlineInputBorder(),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter option B';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Option C
-                    TextFormField(
-                      controller: _option3Controller,
-                      decoration: const InputDecoration(
-                        labelText: 'Option C',
-                        border: OutlineInputBorder(),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter option C';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Option D
-                    TextFormField(
-                      controller: _option4Controller,
-                      decoration: const InputDecoration(
-                        labelText: 'Option D',
-                        border: OutlineInputBorder(),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter option D';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Correct Answer
-                    DropdownButtonFormField<String>(
-                      value: _correctAnswer,
-                      decoration: const InputDecoration(
-                        labelText: 'Correct Answer',
-                        border: OutlineInputBorder(),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
-                      items: ['A', 'B', 'C', 'D']
-                          .map((answer) => DropdownMenuItem(
-                                value: answer,
-                                child: Text('Option $answer'),
-                              ))
-                          .toList(),
-                      onChanged: (value) {
-                        setState(() => _correctAnswer = value!);
-                      },
-                    ),
                     const SizedBox(height: 16),
 
                     // Explanation
@@ -353,6 +278,9 @@ class _AdminQuestionPageState extends State<AdminQuestionPage> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter question order';
                         }
+                        if (int.tryParse(value) == null) {
+                          return 'Please enter a valid number';
+                        }
                         return null;
                       },
                     ),
@@ -380,5 +308,178 @@ class _AdminQuestionPageState extends State<AdminQuestionPage> {
               ),
             ),
     );
+  }
+
+  List<Widget> _buildMultipleChoiceOptions() {
+    return [
+      Text(
+        'Options',
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+      ),
+      const SizedBox(height: 8),
+
+      // Option A
+      TextFormField(
+        controller: _option1Controller,
+        decoration: InputDecoration(
+          labelText: 'Option A',
+          border: const OutlineInputBorder(),
+          filled: true,
+          fillColor: _correctAnswerIndex == 0 ? AppColors.success.withOpacity(0.1) : Colors.white,
+          suffixIcon: Radio<int>(
+            value: 0,
+            groupValue: _correctAnswerIndex,
+            onChanged: (value) {
+              setState(() => _correctAnswerIndex = value!);
+            },
+          ),
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter option A';
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 8),
+
+      // Option B
+      TextFormField(
+        controller: _option2Controller,
+        decoration: InputDecoration(
+          labelText: 'Option B',
+          border: const OutlineInputBorder(),
+          filled: true,
+          fillColor: _correctAnswerIndex == 1 ? AppColors.success.withOpacity(0.1) : Colors.white,
+          suffixIcon: Radio<int>(
+            value: 1,
+            groupValue: _correctAnswerIndex,
+            onChanged: (value) {
+              setState(() => _correctAnswerIndex = value!);
+            },
+          ),
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter option B';
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 8),
+
+      // Option C
+      TextFormField(
+        controller: _option3Controller,
+        decoration: InputDecoration(
+          labelText: 'Option C',
+          border: const OutlineInputBorder(),
+          filled: true,
+          fillColor: _correctAnswerIndex == 2 ? AppColors.success.withOpacity(0.1) : Colors.white,
+          suffixIcon: Radio<int>(
+            value: 2,
+            groupValue: _correctAnswerIndex,
+            onChanged: (value) {
+              setState(() => _correctAnswerIndex = value!);
+            },
+          ),
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter option C';
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 8),
+
+      // Option D
+      TextFormField(
+        controller: _option4Controller,
+        decoration: InputDecoration(
+          labelText: 'Option D',
+          border: const OutlineInputBorder(),
+          filled: true,
+          fillColor: _correctAnswerIndex == 3 ? AppColors.success.withOpacity(0.1) : Colors.white,
+          suffixIcon: Radio<int>(
+            value: 3,
+            groupValue: _correctAnswerIndex,
+            onChanged: (value) {
+              setState(() => _correctAnswerIndex = value!);
+            },
+          ),
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter option D';
+          }
+          return null;
+        },
+      ),
+    ];
+  }
+
+  List<Widget> _buildTrueFalseOptions() {
+    return [
+      Text(
+        'Select Correct Answer',
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+      ),
+      const SizedBox(height: 8),
+      
+      RadioListTile<int>(
+        title: const Text('True'),
+        value: 0,
+        groupValue: _correctAnswerIndex,
+        onChanged: (value) {
+          setState(() => _correctAnswerIndex = value!);
+        },
+        tileColor: _correctAnswerIndex == 0 ? AppColors.success.withOpacity(0.1) : Colors.white,
+      ),
+      const SizedBox(height: 8),
+      
+      RadioListTile<int>(
+        title: const Text('False'),
+        value: 1,
+        groupValue: _correctAnswerIndex,
+        onChanged: (value) {
+          setState(() => _correctAnswerIndex = value!);
+        },
+        tileColor: _correctAnswerIndex == 1 ? AppColors.success.withOpacity(0.1) : Colors.white,
+      ),
+    ];
+  }
+
+  List<Widget> _buildShortAnswerOption() {
+    return [
+      Text(
+        'Correct Answer',
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+      ),
+      const SizedBox(height: 8),
+      
+      TextFormField(
+        controller: _option1Controller,
+        decoration: const InputDecoration(
+          labelText: 'Correct Answer',
+          border: OutlineInputBorder(),
+          filled: true,
+          fillColor: Colors.white,
+          hintText: 'Enter the correct answer',
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter the correct answer';
+          }
+          return null;
+        },
+      ),
+    ];
   }
 }
