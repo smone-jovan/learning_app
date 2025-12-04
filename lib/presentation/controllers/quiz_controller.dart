@@ -235,7 +235,7 @@ class QuizController extends GetxController {
     }
   }
 
-  /// Submit quiz - ✅ UPDATED: Award rewards ONLY on FIRST PASS
+  /// Submit quiz - ✅ UPDATED: Award rewards ONLY on FIRST PASS with detailed logging
   Future<void> submitQuiz() async {
     try {
       isLoading.value = true;
@@ -277,13 +277,18 @@ class QuizController extends GetxController {
       }
 
       // ✅ NEW: Check if user has passed this quiz before
+      print('🔍 Checking if user has passed quiz before...');
       final hasPassedBefore = await hasEverPassedQuiz(user.uid, quiz.quizId);
+      print('📊 hasPassedBefore: $hasPassedBefore');
       
       // ✅ NEW: Award rewards ONLY if passing for the FIRST TIME
       final bool shouldAwardRewards = isPassed && !hasPassedBefore;
+      print('🎁 shouldAwardRewards: $shouldAwardRewards (isPassed: $isPassed, hasPassedBefore: $hasPassedBefore)');
       
       final pointsEarned = shouldAwardRewards ? quiz.pointsReward : 0;
       final coinsEarned = shouldAwardRewards ? quiz.coinsReward : 0;
+      
+      print('💰 Calculated rewards: $pointsEarned points, $coinsEarned coins');
 
       final attempt = QuizAttemptModel(
         attemptId: const Uuid().v4(),
@@ -302,22 +307,48 @@ class QuizController extends GetxController {
         createdAt: DateTime.now(),
       );
 
+      print('💾 Saving quiz attempt to Firestore...');
       await _quizProvider.saveQuizAttempt(attempt);
+      print('✅ Quiz attempt saved successfully');
 
       // ✅ NEW: Update user stats ONLY if rewards are awarded
       if (shouldAwardRewards) {
-        await _userRepository.updatePoints(
-          userId: user.uid,
-          points: pointsEarned,
-        );
-        await _userRepository.updateCoins(
-          userId: user.uid,
-          coins: coinsEarned,
-        );
+        print('🎯 Updating user stats with rewards...');
+        print('📍 User ID: ${user.uid}');
+        print('⭐ Points to add: $pointsEarned');
+        print('🪙 Coins to add: $coinsEarned');
         
-        print('✅ REWARDS EARNED: $pointsEarned points, $coinsEarned coins');
+        try {
+          // Update points
+          print('⏳ Calling updatePoints...');
+          final pointsUpdated = await _userRepository.updatePoints(
+            userId: user.uid,
+            points: pointsEarned,
+          );
+          print('✅ updatePoints result: $pointsUpdated');
+          
+          // Update coins
+          print('⏳ Calling updateCoins...');
+          final coinsUpdated = await _userRepository.updateCoins(
+            userId: user.uid,
+            coins: coinsEarned,
+          );
+          print('✅ updateCoins result: $coinsUpdated');
+          
+          if (pointsUpdated && coinsUpdated) {
+            print('🎉 REWARDS SUCCESSFULLY UPDATED!');
+            print('✅ Total rewards earned: $pointsEarned points, $coinsEarned coins');
+          } else {
+            print('⚠️ WARNING: Some updates failed - points: $pointsUpdated, coins: $coinsUpdated');
+          }
+        } catch (e) {
+          print('❌ ERROR updating rewards: $e');
+          print('📍 Stack trace: ${StackTrace.current}');
+        }
       } else if (isPassed && hasPassedBefore) {
         print('ℹ️ Quiz passed, but rewards already claimed on first pass');
+      } else {
+        print('❌ Quiz not passed, no rewards given');
       }
 
       // ✅ Use Get.off instead of Get.offNamed to keep MainPage stack
@@ -331,7 +362,8 @@ class QuizController extends GetxController {
         routeName: AppRoutes.QUIZ_RESULT,
       );
     } catch (e) {
-      print('Error submitting quiz: $e');
+      print('❌ ERROR submitting quiz: $e');
+      print('📍 Stack trace: ${StackTrace.current}');
       Get.snackbar(
         'Error',
         'Failed to submit quiz',
