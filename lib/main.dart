@@ -22,8 +22,11 @@ void main() async {
   // Initialize AuthController as permanent
   Get.put(AuthController(), permanent: true);
 
-  // Seed data quiz sample (hanya jalan sekali di debug mode)
-  await SeedRunner.runWithDelay();
+  // ✅ UPDATED - Seed data hanya jalan jika user sudah login
+  // Akan dijalankan dengan delay untuk menghindari race condition
+  Future.delayed(const Duration(seconds: 3), () {
+    SeedRunner.runIfAuthenticated();
+  });
   
   runApp(const MyApp());
 }
@@ -46,7 +49,7 @@ class MyApp extends StatelessWidget {
       // All pages
       getPages: AppPages.pages,
       
-      // ✅ TAMBAHAN - Unknown route handler
+      // ✅ Unknown route handler
       unknownRoute: GetPage(
         name: AppRoutes.NOT_FOUND,
         page: () => const NotFoundPage(),
