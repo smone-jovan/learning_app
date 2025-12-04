@@ -8,6 +8,7 @@ import 'package:learning_app/app/data/repositories/user_repository.dart';
 import 'package:learning_app/app/routes/app_routes.dart';
 import 'package:uuid/uuid.dart';
 import 'auth_controller.dart';
+import 'home_controller.dart'; // ✅ TAMBAH: Import HomeController
 import '../pages/quiz/quiz_result_page.dart';
 
 class QuizController extends GetxController {
@@ -343,6 +344,16 @@ class QuizController extends GetxController {
             print('🔄 Reloading user data to refresh UI...');
             await authController.loadUserData();
             print('✅ User data reloaded successfully');
+            
+            // ✅ TAMBAH: Force refresh HomeController juga
+            try {
+              final homeController = Get.find<HomeController>();
+              print('🔄 Force reloading HomeController profile...');
+              await homeController.forceReloadUserProfile();
+              print('✅ HomeController profile reloaded successfully');
+            } catch (e) {
+              print('⚠️ HomeController not found (might not be initialized yet): $e');
+            }
           } else {
             print('⚠️ WARNING: Some updates failed - points: $pointsUpdated, coins: $coinsUpdated');
           }
