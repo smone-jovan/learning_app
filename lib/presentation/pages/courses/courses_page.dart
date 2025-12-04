@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:learning_app/core/constant/colors.dart';
 import 'package:learning_app/app/data/models/course_model.dart';
-import 'package:learning_app/app/routes/app_routes.dart';
 import '../../controllers/course_controller.dart';
 
 class CoursesPage extends GetView<CourseController> {
