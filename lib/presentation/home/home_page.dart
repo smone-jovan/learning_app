@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:learning_app/core/constant/colors.dart';
 import 'package:learning_app/presentation/controllers/home_controller.dart';
+import 'package:learning_app/app/routes/app_routes.dart';
 
 /// Home Page - Advanced gamified dashboard
 class HomePage extends GetView<HomeController> {
@@ -51,6 +52,22 @@ class HomePage extends GetView<HomeController> {
                       _buildLevelProgressCard(),
                       const SizedBox(height: 24),
                       _buildQuickAccessMenu(),
+                      const SizedBox(height: 24),
+                      // Contoh Card
+                      Card(
+                        elevation: 2,
+                        shadowColor: Colors.black.withOpacity(0.1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: ListTile(
+                          leading: const Icon(Icons.quiz, color: Colors.orange),
+                          title: const Text('Quizzes'),
+                          subtitle: const Text('Test your knowledge'),
+                          trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                          onTap: () {
+                            Get.toNamed(AppRoutes.QUIZZES);
+                          },
+                        ),
+                      ),
                       const SizedBox(height: 24),
                       _buildOngoingCourses(),
                       const SizedBox(height: 24),

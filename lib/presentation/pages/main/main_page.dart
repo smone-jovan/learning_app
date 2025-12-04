@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../controllers/auth_controller.dart';
 import '../../home/home_page.dart';
 import '../courses/courses_page.dart';
 import '../quiz/quiz_list_page.dart';

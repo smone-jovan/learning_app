@@ -7,6 +7,7 @@ import 'app/routes/app_routes.dart';
 import 'app/data/services/firebase_service.dart';
 import 'app/data/services/local_storage_services.dart';
 import 'core/theme/app_theme.dart';
+import 'app/data/seeds/seed_runner.dart';
 import 'presentation/controllers/auth_controller.dart';
 
 void main() async {
@@ -20,6 +21,9 @@ void main() async {
   
   // Initialize AuthController as permanent
   Get.put(AuthController(), permanent: true);
+
+  // Seed data quiz sample (hanya jalan sekali di debug mode)
+  await SeedRunner.runWithDelay();
   
   runApp(const MyApp());
 }

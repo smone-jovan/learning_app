@@ -6,7 +6,6 @@ import '../../app/data/models/achievement_model.dart';
 import '../../app/data/models/user_model.dart';
 import '../../core/constant/firebase_collections.dart';
 import 'auth_controller.dart';
-import 'dart:math';
 
 class GamificationController extends GetxController {
   final AuthController authController = Get.find<AuthController>();
