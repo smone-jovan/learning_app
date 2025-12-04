@@ -42,22 +42,28 @@ class UserRepository {
     }
   }
 
-  /// Update user points
+  /// Update user points - ✅ FIX: Update both 'points' AND 'totalPoints'
   Future<bool> updatePoints({
     required String userId,
     required int points,
   }) async {
     try {
-      return await FirestoreService.updateDocument(
+      print('🔧 UserRepository.updatePoints: Updating $points points for user $userId');
+      
+      final result = await FirestoreService.updateDocument(
         collection: FirebaseCollections.users,
         docId: userId,
         data: {
-          'totalPoints': FieldValue.increment(points),
+          'points': FieldValue.increment(points),        // ✅ FIX: Tambah ini untuk UI home screen
+          'totalPoints': FieldValue.increment(points),   // ✅ KEEP: Untuk tracking total
           'updatedAt': Timestamp.now(),
         },
       );
+      
+      print('🔧 UserRepository.updatePoints result: $result');
+      return result;
     } catch (e) {
-      print('Error updating points: $e');
+      print('❌ Error updating points: $e');
       return false;
     }
   }
@@ -68,7 +74,9 @@ class UserRepository {
     required int coins,
   }) async {
     try {
-      return await FirestoreService.updateDocument(
+      print('🔧 UserRepository.updateCoins: Updating $coins coins for user $userId');
+      
+      final result = await FirestoreService.updateDocument(
         collection: FirebaseCollections.users,
         docId: userId,
         data: {
@@ -76,8 +84,11 @@ class UserRepository {
           'updatedAt': Timestamp.now(),
         },
       );
+      
+      print('🔧 UserRepository.updateCoins result: $result');
+      return result;
     } catch (e) {
-      print('Error updating coins: $e');
+      print('❌ Error updating coins: $e');
       return false;
     }
   }
