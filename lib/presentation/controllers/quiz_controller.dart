@@ -51,12 +51,16 @@ class QuizController extends GetxController {
     super.onClose();
   }
 
-  /// Load all quizzes
+  /// Load all quizzes - ✅ FILTER HIDDEN QUIZZES
   Future<void> loadQuizzes() async {
     try {
       isLoading.value = true;
       final allQuizzes = await _quizProvider.getAllQuizzes();
-      quizzes.value = allQuizzes;
+      
+      // ✅ Filter out hidden quizzes from user view
+      quizzes.value = allQuizzes
+          .where((quiz) => quiz.isHidden != true)
+          .toList();
     } catch (e) {
       print('Error loading quizzes: $e');
       Get.snackbar(
@@ -79,6 +83,18 @@ class QuizController extends GetxController {
         Get.snackbar('Error', 'Quiz not found');
         return;
       }
+      
+      // ✅ Check if quiz is hidden
+      if (quiz.isHidden == true) {
+        Get.snackbar(
+          'Error',
+          'This quiz is not available',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        Get.back();
+        return;
+      }
+      
       selectedQuiz.value = quiz;
 
       final authController = Get.find<AuthController>();
@@ -327,7 +343,7 @@ class QuizController extends GetxController {
     selectedDifficulty.value = difficulty;
   }
 
-  /// Get filtered quizzes
+  /// Get filtered quizzes - ✅ ALREADY FILTERED HIDDEN
   List<QuizModel> get filteredQuizzes {
     var filtered = quizzes.toList();
 
