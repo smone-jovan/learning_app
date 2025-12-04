@@ -247,16 +247,7 @@ Contributions are welcome! Please follow these steps:
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-### Commit Convention
 
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
-- `feat:` New feature
-- `fix:` Bug fix
-- `docs:` Documentation changes
-- `style:` Code style changes (formatting)
-- `refactor:` Code refactoring
-- `test:` Adding tests
-- `chore:` Maintenance tasks
 
 ---
 
@@ -269,8 +260,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 👨‍💻 Author
 
 **Your Name**
-- GitHub: [@yourusername](https://github.com/smone-jovan)
-- Email: your.email@example.com
+- GitHub: [@SMONE](https://github.com/smone-jovan)
+- Email: ntar aja
 
 ---
 
