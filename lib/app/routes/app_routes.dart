@@ -17,6 +17,8 @@ import '/../presentation/pages/leaderboard/leaderboard_page.dart';
 import '/../presentation/pages/achievement/achievement_page.dart';
 import '/../presentation/pages/profile/profile_page.dart';
 import '/../presentation/pages/setting/settings_page.dart';
+import '/../presentation/pages/admin/admin_quiz_page.dart';
+import '/../presentation/pages/admin/admin_question_page.dart';
 import '/../presentation/pages/main/main_binding.dart';
 import '/../presentation/home/home_binding.dart';
 
@@ -47,6 +49,10 @@ class AppRoutes {
   static const ACHIEVEMENTS = '/achievements';
   static const PROFILE = '/profile';
   static const SETTINGS = '/settings';
+
+  // Admin Routes
+  static const ADMIN_QUIZ = '/admin/quiz';
+  static const ADMIN_QUESTION = '/admin/question';
 
   // Utility Routes
   static const NOT_FOUND = '/notfound';
@@ -152,6 +158,18 @@ class AppRoutes {
     GetPage(
       name: SETTINGS,
       page: () => SettingsPage(),
+      binding: HomeBinding(),
+    ),
+
+    // ==================== ADMIN ROUTES ====================
+    GetPage(
+      name: ADMIN_QUIZ,
+      page: () => const AdminQuizPage(),
+      binding: HomeBinding(),
+    ),
+    GetPage(
+      name: ADMIN_QUESTION,
+      page: () => const AdminQuestionPage(),
       binding: HomeBinding(),
     ),
   ];
