@@ -26,27 +26,47 @@ class QuizListPage extends GetView<QuizController> {
         ],
       ),
       body: Obx(() {
-        if (controller.isLoading.value) {
+        // 🆕 FIX: Check loading state dengan condition untuk avoid double indicator
+        if (controller.isLoading.value && !controller.isRefreshing.value) {
           return const Center(
             child: CircularProgressIndicator(),
           );
         }
 
+        // 🆕 FIX: Empty state wrapped dengan RefreshIndicator agar bisa pull
         if (controller.quizzes.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+          return RefreshIndicator(
+            onRefresh: controller.refreshQuizzes, // 🆕 Method baru
+            child: ListView( // 🆕 WRAP dengan ListView untuk enable scroll
+              physics: const AlwaysScrollableScrollPhysics(), // 🆕 CRITICAL
               children: [
-                Icon(
-                  Icons.quiz_outlined,
-                  size: 80,
-                  color: AppColors.textSecondary.withOpacity(0.5),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No Quizzes Available',
-                  style: Get.textTheme.titleLarge?.copyWith(
-                    color: AppColors.textSecondary,
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.quiz_outlined,
+                          size: 80,
+                          color: AppColors.textSecondary.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No Quizzes Available',
+                          style: Get.textTheme.titleLarge?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Pull down to refresh',
+                          style: Get.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -54,9 +74,11 @@ class QuizListPage extends GetView<QuizController> {
           );
         }
 
+        // 🆕 FIX: Update onRefresh method
         return RefreshIndicator(
-          onRefresh: controller.loadQuizzes,
+          onRefresh: controller.refreshQuizzes, // 🆕 Ganti dari loadQuizzes ke refreshQuizzes
           child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(), // 🆕 TAMBAH ini
             padding: const EdgeInsets.all(16),
             itemCount: controller.quizzes.length,
             itemBuilder: (context, index) {
