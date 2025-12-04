@@ -276,12 +276,14 @@ class QuizController extends GetxController {
         );
       }
 
-      Get.offNamed(
-        AppRoutes.QUIZ_RESULT,
+      // ✅ Use Get.off instead of Get.offNamed to keep MainPage stack
+      Get.off(
+        () => const QuizResultPage(),
         arguments: {
           'attempt': attempt,
           'quiz': quiz,
         },
+        routeName: AppRoutes.QUIZ_RESULT,
       );
     } catch (e) {
       print('Error submitting quiz: $e');
@@ -295,15 +297,20 @@ class QuizController extends GetxController {
     }
   }
 
-  /// Retry quiz
+  /// Retry quiz - ✅ Fixed to prevent controller disposal
   void retryQuiz(String quizId) {
+    // Reset quiz state
     isQuizStarted.value = false;
     currentQuestionIndex.value = 0;
     userAnswers.clear();
     questions.clear();
     _quizTimer?.cancel();
+    remainingTime.value = 0;
 
-    Get.offAllNamed(
+    // ✅ Navigate back to quiz play WITHOUT removing MainPage
+    // This keeps QuizController alive
+    Get.back(); // Close result page
+    Get.toNamed(
       AppRoutes.QUIZ_SESSION,
       arguments: {'quizId': quizId},
     );
