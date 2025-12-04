@@ -50,13 +50,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
       
       // Update email if changed
       if (_emailController.text.trim() != user.email) {
-        await user.updateEmail(_emailController.text.trim());
+        // ✅ FIX: Use verifyBeforeUpdateEmail instead of updateEmail
+        // This sends verification email and is more secure
+        await user.verifyBeforeUpdateEmail(_emailController.text.trim());
+        
+        Get.snackbar(
+          'Email Verification Sent',
+          'Please check your new email to verify the change',
+          backgroundColor: AppColors.primary,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5),
+        );
       }
 
-      // Update Firestore document
+      // Update Firestore document (name only, email updates after verification)
       await _firestore.collection('users').doc(user.uid).update({
         'displayName': _nameController.text.trim(),
-        'email': _emailController.text.trim(),
+        // Don't update email in Firestore yet - wait for verification
       });
 
       // Reload user data
@@ -88,7 +98,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Failed to update profile',
+        'Failed to update profile: ${e.toString()}',
         backgroundColor: AppColors.error,
         colorText: Colors.white,
       );
@@ -166,6 +176,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   ),
                   filled: true,
                   fillColor: Colors.white,
+                  helperText: 'Changing email requires verification',
+                  helperMaxLines: 2,
                 ),
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
