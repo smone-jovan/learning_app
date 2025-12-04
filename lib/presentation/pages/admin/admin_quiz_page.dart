@@ -12,9 +12,10 @@ class AdminQuizPage extends StatefulWidget {
   State<AdminQuizPage> createState() => _AdminQuizPageState();
 }
 
-class _AdminQuizPageState extends State<AdminQuizPage> {
+class _AdminQuizPageState extends State<AdminQuizPage> with SingleTickerProviderStateMixin {
   final _firestore = FirebaseFirestore.instance;
   final _formKey = GlobalKey<FormState>();
+  late TabController _tabController;
   
   // Form controllers
   final _titleController = TextEditingController();
@@ -29,14 +30,21 @@ class _AdminQuizPageState extends State<AdminQuizPage> {
   String _selectedDifficulty = 'Easy';
   bool _isPremium = false;
   bool _isLoading = false;
-  int _selectedTab = 0; // 0 = Create, 1 = Manage
   
   // Edit mode
   bool _isEditMode = false;
   String? _editingQuizId;
+  DateTime? _existingCreatedAt;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
 
   @override
   void dispose() {
+    _tabController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
     _categoryController.dispose();
@@ -62,6 +70,7 @@ class _AdminQuizPageState extends State<AdminQuizPage> {
       _isPremium = false;
       _isEditMode = false;
       _editingQuizId = null;
+      _existingCreatedAt = null;
     });
   }
 
@@ -79,7 +88,8 @@ class _AdminQuizPageState extends State<AdminQuizPage> {
       _isPremium = quiz.isPremium;
       _isEditMode = true;
       _editingQuizId = quiz.quizId;
-      _selectedTab = 0; // Switch to create/edit tab
+      _existingCreatedAt = quiz.createdAt; // ✅ Store existing createdAt
+      _tabController.index = 0; // Switch to create/edit tab
     });
   }
 
@@ -90,6 +100,16 @@ class _AdminQuizPageState extends State<AdminQuizPage> {
 
     try {
       final quizId = _isEditMode ? _editingQuizId! : const Uuid().v4();
+      
+      // ✅ FIX: Properly handle createdAt
+      DateTime createdAt;
+      if (_isEditMode && _existingCreatedAt != null) {
+        // Use existing createdAt when editing
+        createdAt = _existingCreatedAt!;
+      } else {
+        // Use current time when creating new
+        createdAt = DateTime.now();
+      }
       
       final quiz = QuizModel(
         quizId: quizId,
@@ -103,10 +123,7 @@ class _AdminQuizPageState extends State<AdminQuizPage> {
         coinsReward: int.tryParse(_coinsRewardController.text) ?? 10,
         totalQuestions: int.tryParse(_totalQuestionsController.text) ?? 10,
         isPremium: _isPremium,
-        createdAt: _isEditMode 
-            ? (await _firestore.collection('quizzes').doc(quizId).get())
-                .data()?['createdAt']?.toDate() ?? DateTime.now()
-            : DateTime.now(),
+        createdAt: createdAt,
         updatedAt: DateTime.now(),
       );
 
@@ -123,7 +140,7 @@ class _AdminQuizPageState extends State<AdminQuizPage> {
       );
 
       _clearForm();
-      setState(() => _selectedTab = 1); // Switch to manage tab
+      _tabController.index = 1; // Switch to manage tab
     } catch (e) {
       Get.snackbar(
         'Error',
@@ -232,15 +249,15 @@ class _AdminQuizPageState extends State<AdminQuizPage> {
         backgroundColor: AppColors.primary,
         title: const Text('Admin - Quiz Management'),
         bottom: TabBar(
-          onTap: (index) => setState(() => _selectedTab = index),
+          controller: _tabController,
           tabs: const [
             Tab(text: 'Create/Edit'),
             Tab(text: 'Manage Quizzes'),
           ],
         ),
       ),
-      body: IndexedStack(
-        index: _selectedTab,
+      body: TabBarView(
+        controller: _tabController,
         children: [
           _buildCreateEditTab(),
           _buildManageTab(),
