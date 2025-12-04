@@ -19,6 +19,10 @@ class HomeController extends GetxController {
   final RxBool isLoading = RxBool(false);
   final RxBool isRefreshing = RxBool(false);
 
+  // 🆕 Tambah observable untuk animasi reward
+  final RxInt recentPointsGained = RxInt(0);
+  final RxInt recentCoinsGained = RxInt(0);
+
   // Store data untuk continue learning
   final Rx<Map<String, dynamic>> continueLearning =
       Rx<Map<String, dynamic>>({});
@@ -40,27 +44,60 @@ class HomeController extends GetxController {
     // Cancel previous subscription if any
     _profileSub?.cancel();
 
-    _profileSub = _firebaseService.getUserProfileStream(uid).listen((doc) {
-      if (!doc.exists) return;
-      final data = (doc.data() as Map<String, dynamic>?) ?? {};
+    print('📡 Setting up real-time listener for user: $uid');
 
-      // Map Firestore fields to your UserModel (adjust keys if your Firestore schema differs)
+    _profileSub = _firebaseService.getUserProfileStream(uid).listen((doc) {
+      if (!doc.exists) {
+        print('⚠️ User doc does not exist!');
+        return;
+      }
+
+      final data = (doc.data() as Map<String, dynamic>?) ?? {};
+      print('📥 Received profile update: ${data['points']}, ${data['coins']}');
+
+      // 🔥 Calculate delta untuk animasi
+      final oldPoints = userModel.value?.points ?? 0;
+      final oldCoins = userModel.value?.coins ?? 0;
+      final newPoints = (data['points'] ?? 0) as int;
+      final newCoins = (data['coins'] ?? 0) as int;
+
+      if (newPoints > oldPoints) {
+        recentPointsGained.value = newPoints - oldPoints;
+        print('✅ Points gained: ${recentPointsGained.value}');
+        
+        // Auto-hide setelah 3 detik
+        Future.delayed(Duration(seconds: 3), () {
+          recentPointsGained.value = 0;
+        });
+      }
+
+      if (newCoins > oldCoins) {
+        recentCoinsGained.value = newCoins - oldCoins;
+        print('✅ Coins gained: ${recentCoinsGained.value}');
+        
+        // Auto-hide setelah 3 detik
+        Future.delayed(Duration(seconds: 3), () {
+          recentCoinsGained.value = 0;
+        });
+      }
+
+      // Map Firestore fields to your UserModel
       final mapped = UserModel(
         userId: uid,
         displayName: data['displayName'] ?? data['fullName'] ?? '',
         email: data['email'] ?? '',
-        points: (data['points'] ?? 0) as int,
-        coins: (data['coins'] ?? 0) as int,
+        points: newPoints,
+        coins: newCoins,
         level: data['level'] ?? 1,
         currentStreak: (data['streak'] ?? data['currentStreak'] ?? 0) as int,
         longestStreak: (data['longestStreak'] ?? 0) as int,
         lastActiveDate: _parseTimestamp(data['lastActiveDate']),
-        // keep other fields as needed
       );
 
       userModel.value = mapped;
+      print('🔄 UserModel updated: ${mapped.points} points, ${mapped.coins} coins');
     }, onError: (e) {
-      print('Error listening to profile: $e');
+      print('❌ Error listening to profile: $e');
     });
   }
 
@@ -76,6 +113,40 @@ class HomeController extends GetxController {
       }
     }
     return null;
+  }
+
+  /// 🆕 Force reload user profile (panggil setelah quiz selesai)
+  Future<void> forceReloadUserProfile() async {
+    try {
+      final uid = _firebaseService.getCurrentUserUID();
+      if (uid == null) return;
+
+      print('🔄 Force reloading user profile...');
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      if (!doc.exists) return;
+
+      final data = doc.data() ?? {};
+      final mapped = UserModel(
+        userId: uid,
+        displayName: data['displayName'] ?? data['fullName'] ?? '',
+        email: data['email'] ?? '',
+        points: (data['points'] ?? 0) as int,
+        coins: (data['coins'] ?? 0) as int,
+        level: data['level'] ?? 1,
+        currentStreak: (data['streak'] ?? data['currentStreak'] ?? 0) as int,
+        longestStreak: (data['longestStreak'] ?? 0) as int,
+        lastActiveDate: _parseTimestamp(data['lastActiveDate']),
+      );
+
+      userModel.value = mapped;
+      print('✅ Profile force-reloaded: ${mapped.points} points, ${mapped.coins} coins');
+    } catch (e) {
+      print('❌ Error force reloading profile: $e');
+    }
   }
 
   /// Load dashboard data on init
@@ -109,15 +180,13 @@ class HomeController extends GetxController {
           quizId: doc.id,
           title: d['title'] ?? '',
           description: d['description'] ?? '',
-          category: d['category'] ?? '',       // ADD THIS
-          difficulty: d['difficulty'] ?? '',   // ADD THIS
-          totalQuestions: d['totalQuestions'] ?? 0, // ADD THIS
-          // map other fields if needed
+          category: d['category'] ?? '',
+          difficulty: d['difficulty'] ?? '',
+          totalQuestions: d['totalQuestions'] ?? 0,
         );
       }
     } catch (e) {
       print('Error loading daily challenge: $e');
-      // Don't show error snackbar jika daily challenge kosong
     }
   }
 
@@ -134,7 +203,6 @@ class HomeController extends GetxController {
               description: data['description'] ?? '',
               category: data['category'] ?? '',
               level: data['level']?.toString() ?? 'Beginner',
-              // ✅ Add createdAt parameter
               createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
             );
           })
@@ -148,7 +216,6 @@ class HomeController extends GetxController {
   /// Load continue learning data
   Future<void> _loadContinueLearning() async {
     try {
-      // You can fetch user-specific continue learning if needed
       final uid = _firebaseService.getCurrentUserUID();
       if (uid != null) {
         // example: fetch enrolled courses or progress
@@ -166,6 +233,7 @@ class HomeController extends GetxController {
         _loadDailyChallenge(),
         _loadRecommendedCourses(),
         _loadContinueLearning(),
+        forceReloadUserProfile(), // 🔥 Tambah force reload
       ]);
       Get.snackbar(
         'Success',
@@ -219,10 +287,10 @@ class HomeController extends GetxController {
   /// ========== GET LEVEL COLOR ==========
   Color getLevelColor() {
     final level = userModel.value?.level ?? 1;
-    if (level <= 1) return const Color(0xFF3B82F6); // Blue - Beginner
-    if (level <= 5) return const Color(0xFFF59E0B); // Orange - Intermediate
-    if (level <= 10) return const Color(0xFFEF4444); // Red - Advanced
-    return const Color(0xFFA855F7); // Purple - Expert
+    if (level <= 1) return const Color(0xFF3B82F6);
+    if (level <= 5) return const Color(0xFFF59E0B);
+    if (level <= 10) return const Color(0xFFEF4444);
+    return const Color(0xFFA855F7);
   }
 
   /// ========== GET RANK COLOR ==========
@@ -233,7 +301,7 @@ class HomeController extends GetxController {
       'Gold': Color(0xFFFFD700),
       'Platinum': Color(0xFFE5E4E2),
     };
-    return const Color(0xFFCD7F32); // Default Bronze
+    return const Color(0xFFCD7F32);
   }
 
   /// ========== NAVIGATE TO QUIZZES ==========
@@ -301,7 +369,6 @@ class HomeController extends GetxController {
     try {
       final uid = _firebaseService.getCurrentUserUID();
       if (uid != null) {
-        // you can implement a firebase_service method to log activity
         await _firebaseService.updateUserProfile(uid, {
           'lastActivity': Timestamp.now(),
         });
