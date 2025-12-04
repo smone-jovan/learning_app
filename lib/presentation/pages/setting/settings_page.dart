@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/auth_controller.dart';
 import '../../../app/routes/app_routes.dart';
+import 'edit_profile_page.dart';
+import 'change_password_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -92,7 +94,7 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 24),
           
           // ==========================================
-          // ADMIN MENU - ✅ BARU
+          // ADMIN MENU
           // ==========================================
           Obx(() {
             final user = authController.userModel.value;
@@ -170,7 +172,7 @@ class SettingsPage extends StatelessWidget {
           }),
           
           // ==========================================
-          // ACCOUNT SETTINGS
+          // ACCOUNT SETTINGS - ✅ NOW WORKING
           // ==========================================
           Text(
             'Account',
@@ -187,26 +189,30 @@ class SettingsPage extends StatelessWidget {
                 ListTile(
                   leading: const Icon(Icons.person_outline_rounded),
                   title: const Text('Edit Profile'),
+                  subtitle: const Text('Update your name and email'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () {
-                    Get.snackbar(
-                      'Coming Soon',
-                      'Edit profile feature will be available soon',
-                      snackPosition: SnackPosition.BOTTOM,
-                    );
+                    Get.to(() => const EditProfilePage());
                   },
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.lock_outline_rounded),
                   title: const Text('Change Password'),
+                  subtitle: const Text('Update your account password'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () {
-                    Get.snackbar(
-                      'Coming Soon',
-                      'Change password feature will be available soon',
-                      snackPosition: SnackPosition.BOTTOM,
-                    );
+                    Get.to(() => const ChangePasswordPage());
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.email_outlined),
+                  title: const Text('Reset Password via Email'),
+                  subtitle: const Text('Send password reset link'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () {
+                    _showResetPasswordDialog(context, authController);
                   },
                 ),
               ],
@@ -233,15 +239,10 @@ class SettingsPage extends StatelessWidget {
                 ListTile(
                   leading: const Icon(Icons.notifications_outlined),
                   title: const Text('Notifications'),
+                  subtitle: const Text('Coming Soon'),
                   trailing: Switch(
                     value: true,
-                    onChanged: (value) {
-                      Get.snackbar(
-                        'Coming Soon',
-                        'Notification settings will be available soon',
-                        snackPosition: SnackPosition.BOTTOM,
-                      );
-                    },
+                    onChanged: null, // Disabled until implemented
                   ),
                 ),
                 const Divider(height: 1),
@@ -261,11 +262,12 @@ class SettingsPage extends StatelessWidget {
                 ListTile(
                   leading: const Icon(Icons.language_rounded),
                   title: const Text('Language'),
+                  subtitle: const Text('English (Default)'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () {
                     Get.snackbar(
                       'Coming Soon',
-                      'Language settings will be available soon',
+                      'Multi-language support will be available soon',
                       snackPosition: SnackPosition.BOTTOM,
                     );
                   },
@@ -300,6 +302,7 @@ class SettingsPage extends StatelessWidget {
                       'Help',
                       'Contact support at support@learningapp.com',
                       snackPosition: SnackPosition.BOTTOM,
+                      duration: const Duration(seconds: 4),
                     );
                   },
                 ),
@@ -411,6 +414,51 @@ class SettingsPage extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _showResetPasswordDialog(BuildContext context, AuthController authController) {
+    final emailController = TextEditingController(
+      text: authController.currentUser?.email ?? '',
+    );
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Reset Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('A password reset link will be sent to your email.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              emailController.dispose();
+              Get.back();
+            },
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final email = emailController.text.trim();
+              emailController.dispose();
+              Get.back();
+              authController.resetPassword(email);
+            },
+            child: const Text('Send Link'),
+          ),
+        ],
+      ),
     );
   }
 
