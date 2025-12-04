@@ -86,7 +86,7 @@ class _AdminQuestionPageState extends State<AdminQuestionPage> {
       final question = QuestionModel(
         questionId: const Uuid().v4(),
         quizId: _quizIdController.text.trim(),
-        questionType: _selectedQuestionType,
+        type: _selectedQuestionType,
         questionText: _questionTextController.text.trim(),
         options: options,
         correctAnswer: _correctAnswer,
