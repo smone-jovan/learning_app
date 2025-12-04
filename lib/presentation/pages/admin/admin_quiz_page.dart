@@ -35,6 +35,7 @@ class _AdminQuizPageState extends State<AdminQuizPage> with SingleTickerProvider
   bool _isEditMode = false;
   String? _editingQuizId;
   DateTime? _existingCreatedAt;
+  // int _selectedTab = 0; // No longer needed, TabController will handle it
 
   @override
   void initState() {
@@ -52,6 +53,7 @@ class _AdminQuizPageState extends State<AdminQuizPage> with SingleTickerProvider
     _pointsRewardController.dispose();
     _coinsRewardController.dispose();
     _totalQuestionsController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -69,6 +71,7 @@ class _AdminQuizPageState extends State<AdminQuizPage> with SingleTickerProvider
       _isPremium = false;
       _isEditMode = false;
       _editingQuizId = null;
+      _existingCreatedAt = null;
     });
   }
 
@@ -86,7 +89,8 @@ class _AdminQuizPageState extends State<AdminQuizPage> with SingleTickerProvider
       _isPremium = quiz.isPremium;
       _isEditMode = true;
       _editingQuizId = quiz.quizId;
-      _selectedTab = 0; // Switch to create/edit tab
+      _existingCreatedAt = quiz.createdAt;
+      _tabController.index = 0; // Switch to create/edit tab
     });
   }
 
@@ -111,8 +115,7 @@ class _AdminQuizPageState extends State<AdminQuizPage> with SingleTickerProvider
         totalQuestions: int.tryParse(_totalQuestionsController.text) ?? 10,
         isPremium: _isPremium,
         createdAt: _isEditMode 
-            ? (await _firestore.collection('quizzes').doc(quizId).get())
-                .data()?['createdAt'].toDate() ?? DateTime.now()
+            ? _existingCreatedAt ?? DateTime.now()
             : DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -130,7 +133,7 @@ class _AdminQuizPageState extends State<AdminQuizPage> with SingleTickerProvider
       );
 
       _clearForm();
-      setState(() => _selectedTab = 1); // Switch to manage tab
+      _tabController.index = 1; // Switch to manage tab
     } catch (e) {
       Get.snackbar(
         'Error',
@@ -238,17 +241,17 @@ class _AdminQuizPageState extends State<AdminQuizPage> with SingleTickerProvider
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         title: const Text('Admin - Quiz Management'),
-        bottom: TabBar(
-          onTap: (index) => setState(() => _selectedTab = index),
+        bottom: TabBar( // ✅ Let controller handle taps
+          controller: _tabController,
           tabs: const [
             Tab(text: 'Create/Edit'),
             Tab(text: 'Manage Quizzes'),
           ],
         ),
       ),
-      body: IndexedStack(
-        index: _selectedTab,
-        children: [
+      body: TabBarView( // ✅ Use TabBarView for better state management
+        controller: _tabController,
+        children: [ // The children are the tab pages
           _buildCreateEditTab(),
           _buildManageTab(),
         ],
