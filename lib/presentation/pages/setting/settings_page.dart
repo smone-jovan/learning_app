@@ -2,7 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../controllers/auth_controller.dart';
+import '../../controllers/settings_controller.dart';
 import '../../../app/routes/app_routes.dart';
 import 'edit_profile_page.dart';
 import 'change_password_page.dart';
@@ -13,6 +15,7 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authController = Get.find<AuthController>();
+    final settingsController = Get.find<SettingsController>();
 
     return Scaffold(
       appBar: AppBar(
@@ -172,7 +175,7 @@ class SettingsPage extends StatelessWidget {
           }),
           
           // ==========================================
-          // ACCOUNT SETTINGS - ✅ NOW WORKING
+          // ACCOUNT SETTINGS
           // ==========================================
           Text(
             'Account',
@@ -222,7 +225,7 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 24),
           
           // ==========================================
-          // APP SETTINGS
+          // APP SETTINGS - UPDATED
           // ==========================================
           Text(
             'Preferences',
@@ -236,28 +239,66 @@ class SettingsPage extends StatelessWidget {
           Card(
             child: Column(
               children: [
-                ListTile(
-                  leading: const Icon(Icons.notifications_outlined),
+                // ✅ NOTIFICATIONS - WORKING NOW
+                Obx(() => SwitchListTile(
+                  secondary: const Icon(Icons.notifications_outlined),
                   title: const Text('Notifications'),
-                  subtitle: const Text('Coming Soon'),
-                  trailing: Switch(
-                    value: true,
-                    onChanged: null, // Disabled until implemented
+                  subtitle: Text(
+                    settingsController.notificationsEnabled.value
+                        ? 'Enabled'
+                        : 'Disabled',
                   ),
-                ),
+                  value: settingsController.notificationsEnabled.value,
+                  onChanged: (value) {
+                    settingsController.setNotificationEnabled(value);
+                  },
+                )),
                 const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.dark_mode_outlined),
-                  title: const Text('Dark Mode'),
-                  trailing: Switch(
-                    value: Get.isDarkMode,
-                    onChanged: (value) {
-                      Get.changeThemeMode(
-                        value ? ThemeMode.dark : ThemeMode.light,
-                      );
-                    },
+                
+                // ✅ THEME MODE - WORKING NOW
+                Obx(() => SwitchListTile(
+                  secondary: Icon(
+                    settingsController.themeMode.value == ThemeMode.dark
+                        ? Icons.dark_mode_outlined
+                        : Icons.light_mode_outlined,
                   ),
-                ),
+                  title: const Text('Follow System Theme'),
+                  subtitle: Text(
+                    settingsController.followSystemTheme.value
+                        ? 'Using system preference'
+                        : 'Manual override active',
+                  ),
+                  value: settingsController.followSystemTheme.value,
+                  onChanged: (value) {
+                    settingsController.setFollowSystem(value);
+                  },
+                )),
+                
+                // ✅ MANUAL DARK MODE TOGGLE (only show if not following system)
+                Obx(() {
+                  if (settingsController.followSystemTheme.value) {
+                    return const SizedBox.shrink();
+                  }
+                  return Column(
+                    children: [
+                      const Divider(height: 1),
+                      SwitchListTile(
+                        secondary: const Icon(Icons.dark_mode_rounded),
+                        title: const Text('Dark Mode'),
+                        subtitle: Text(
+                          settingsController.themeMode.value == ThemeMode.dark
+                              ? 'Dark theme active'
+                              : 'Light theme active',
+                        ),
+                        value: settingsController.themeMode.value == ThemeMode.dark,
+                        onChanged: (value) {
+                          settingsController.toggleDarkMode(value);
+                        },
+                      ),
+                    ],
+                  );
+                }),
+                
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.language_rounded),
@@ -279,7 +320,7 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 24),
           
           // ==========================================
-          // ABOUT & HELP
+          // ABOUT & HELP - UPDATED
           // ==========================================
           Text(
             'About',
@@ -293,20 +334,26 @@ class SettingsPage extends StatelessWidget {
           Card(
             child: Column(
               children: [
+                // ✅ HELP & SUPPORT - WORKING NOW
                 ListTile(
                   leading: const Icon(Icons.help_outline_rounded),
                   title: const Text('Help & Support'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () {
-                    Get.snackbar(
-                      'Help',
-                      'Contact support at support@learningapp.com',
-                      snackPosition: SnackPosition.BOTTOM,
-                      duration: const Duration(seconds: 4),
-                    );
-                  },
+                  subtitle: const Text('Report issues on GitHub'),
+                  trailing: const Icon(Icons.open_in_new_rounded),
+                  onTap: () => _openGitHubIssues(),
                 ),
                 const Divider(height: 1),
+                
+                // ✅ VIEW REPOSITORY
+                ListTile(
+                  leading: const Icon(Icons.code_rounded),
+                  title: const Text('View Repository'),
+                  subtitle: const Text('Open source on GitHub'),
+                  trailing: const Icon(Icons.open_in_new_rounded),
+                  onTap: () => _openGitHubRepo(),
+                ),
+                const Divider(height: 1),
+                
                 ListTile(
                   leading: const Icon(Icons.info_outline_rounded),
                   title: const Text('About App'),
@@ -320,6 +367,14 @@ class SettingsPage extends StatelessWidget {
                       children: [
                         const Text(
                           'A gamified learning platform with courses, quizzes, and achievements.',
+                        ),
+                        const SizedBox(height: 16),
+                        const Text('Made with ❤️ using Flutter & Firebase'),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          icon: const Icon(Icons.code),
+                          label: const Text('View on GitHub'),
+                          onPressed: () => _openGitHubRepo(),
                         ),
                       ],
                     );
@@ -415,6 +470,33 @@ class SettingsPage extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  // ✅ HELPER METHODS FOR GITHUB
+  Future<void> _openGitHubRepo() async {
+    final url = Uri.parse('https://github.com/smone-jovan/learning_app');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      Get.snackbar(
+        'Error',
+        'Could not open GitHub repository',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  Future<void> _openGitHubIssues() async {
+    final url = Uri.parse('https://github.com/smone-jovan/learning_app/issues');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      Get.snackbar(
+        'Error',
+        'Could not open GitHub issues',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 
   void _showResetPasswordDialog(BuildContext context, AuthController authController) {
