@@ -15,6 +15,7 @@ class QuizResultPage extends GetView<QuizController> {
     final args = Get.arguments as Map<String, dynamic>?;
     final attempt = args?['attempt'] as QuizAttemptModel?;
     final quiz = args?['quiz'] as QuizModel?;
+    final isFirstTimePass = args?['isFirstTimePass'] as bool? ?? false; // ✅ NEW
 
     if (attempt == null || quiz == null) {
       return Scaffold(
@@ -40,8 +41,8 @@ class QuizResultPage extends GetView<QuizController> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Result Header
-            _buildResultHeader(attempt),
+            // Result Header - ✅ UPDATED with isFirstTimePass
+            _buildResultHeader(attempt, isFirstTimePass),
             const SizedBox(height: 24),
 
             // Score Card
@@ -52,8 +53,8 @@ class QuizResultPage extends GetView<QuizController> {
             _buildPerformanceStats(attempt),
             const SizedBox(height: 24),
 
-            // Rewards Earned
-            _buildRewardsCard(attempt),
+            // Rewards Earned - ✅ UPDATED with isFirstTimePass
+            _buildRewardsCard(attempt, isFirstTimePass),
             const SizedBox(height: 24),
 
             // Action Buttons
@@ -64,7 +65,25 @@ class QuizResultPage extends GetView<QuizController> {
     );
   }
 
-  Widget _buildResultHeader(QuizAttemptModel attempt) {
+  // ✅ UPDATED: Show different message for first-time pass
+  Widget _buildResultHeader(QuizAttemptModel attempt, bool isFirstTimePass) {
+    // Determine message based on pass status and first-time
+    String title;
+    String message;
+    
+    if (attempt.isPassed) {
+      if (isFirstTimePass) {
+        title = '🎉 Congratulations!';
+        message = 'First time pass! You earned rewards!';
+      } else {
+        title = '✅ Passed Again!';
+        message = 'Great job! (Rewards already claimed on first pass)';
+      }
+    } else {
+      title = '💪 Keep Practicing!';
+      message = 'You can retry to improve your score';
+    }
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -85,14 +104,14 @@ class QuizResultPage extends GetView<QuizController> {
         children: [
           Icon(
             attempt.isPassed
-                ? Icons.emoji_events_rounded
+                ? (isFirstTimePass ? Icons.emoji_events_rounded : Icons.verified_rounded)
                 : Icons.replay_rounded,
             size: 64,
             color: Colors.white,
           ),
           const SizedBox(height: 16),
           Text(
-            attempt.isPassed ? 'Congratulations!' : 'Keep Practicing!',
+            title,
             style: Get.textTheme.headlineSmall?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.bold,
@@ -101,9 +120,7 @@ class QuizResultPage extends GetView<QuizController> {
           ),
           const SizedBox(height: 8),
           Text(
-            attempt.isPassed
-                ? 'You passed the quiz successfully!'
-                : 'You can retry to improve your score',
+            message,
             style: Get.textTheme.bodyLarge?.copyWith(
               color: Colors.white.withOpacity(0.9),
             ),
@@ -253,52 +270,77 @@ class QuizResultPage extends GetView<QuizController> {
     );
   }
 
-  Widget _buildRewardsCard(QuizAttemptModel attempt) {
+  // ✅ UPDATED: Show reward status clearly
+  Widget _buildRewardsCard(QuizAttemptModel attempt, bool isFirstTimePass) {
+    // Determine if rewards were actually awarded (non-zero)
+    final bool hasRewards = attempt.pointsEarned > 0 || attempt.coinsEarned > 0;
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.gold.withOpacity(0.1),
+        color: hasRewards 
+            ? AppColors.gold.withOpacity(0.1)
+            : AppColors.textSecondary.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.gold.withOpacity(0.3),
+          color: hasRewards
+              ? AppColors.gold.withOpacity(0.3)
+              : AppColors.textSecondary.withOpacity(0.2),
         ),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.card_giftcard_rounded,
-                color: AppColors.gold,
+              Icon(
+                hasRewards ? Icons.card_giftcard_rounded : Icons.info_outline,
+                color: hasRewards ? AppColors.gold : AppColors.textSecondary,
                 size: 24,
               ),
               const SizedBox(width: 8),
               Text(
-                'Rewards Earned',
+                hasRewards ? 'Rewards Earned' : 'Rewards Status',
                 style: Get.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
+                  color: hasRewards ? AppColors.textPrimary : AppColors.textSecondary,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildRewardItem(
-                Icons.star_rounded,
-                '${attempt.pointsEarned}',
-                'Points',
-                AppColors.gold,
+          
+          // Show different UI based on reward status
+          if (hasRewards)
+            // Show earned rewards
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildRewardItem(
+                  Icons.star_rounded,
+                  '${attempt.pointsEarned}',
+                  'Points',
+                  AppColors.gold,
+                ),
+                _buildRewardItem(
+                  Icons.monetization_on_rounded,
+                  '${attempt.coinsEarned}',
+                  'Coins',
+                  AppColors.orange,
+                ),
+              ],
+            )
+          else
+            // Show message for no rewards
+            Text(
+              attempt.isPassed 
+                  ? 'Rewards already claimed on first pass ✅'
+                  : 'Pass the quiz to earn rewards!',
+              style: Get.textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+                fontStyle: FontStyle.italic,
               ),
-              _buildRewardItem(
-                Icons.monetization_on_rounded,
-                '${attempt.coinsEarned}',
-                'Coins',
-                AppColors.orange,
-              ),
-            ],
-          ),
+              textAlign: TextAlign.center,
+            ),
         ],
       ),
     );
