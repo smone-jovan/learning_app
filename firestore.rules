@@ -1,0 +1,150 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==========================================
+    // HELPER FUNCTIONS
+    // ==========================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // ==========================================
+    // USERS COLLECTION
+    // ==========================================
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+    
+    // ==========================================
+    // COURSES (read-only untuk users, admin bisa write)
+    // ==========================================
+    match /courses/{courseId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin(); // ✅ Admin bisa manage courses
+    }
+    
+    // ==========================================
+    // LESSONS
+    // ==========================================
+    match /lessons/{lessonId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin(); // ✅ Admin bisa manage lessons
+    }
+    
+    // ==========================================
+    // QUIZZES - ✅ UPDATED
+    // ==========================================
+    match /quizzes/{quizId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin(); // ✅ Admin bisa manage quizzes
+    }
+    
+    // ==========================================
+    // QUESTIONS - ✅ UPDATED
+    // ==========================================
+    match /questions/{questionId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin(); // ✅ Admin bisa manage questions
+    }
+    
+    // ==========================================
+    // USER PROGRESS
+    // ==========================================
+    match /user_progress/{progressId} {
+      allow read: if isAuthenticated() && 
+                     resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+    }
+    
+    // ==========================================
+    // QUIZ ATTEMPTS - ✅ UPDATED
+    // ==========================================
+    match /quiz_attempts/{attemptId} {
+      allow read: if isAuthenticated() && 
+                     resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+      allow delete: if false; // Attempt tidak boleh dihapus
+    }
+    
+    // ==========================================
+    // LEADERBOARD (read-only untuk semua user)
+    // ==========================================
+    match /leaderboard/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin(); // ✅ Admin bisa update leaderboard
+    }
+    
+    // ==========================================
+    // ACHIEVEMENTS (read-only untuk semua user)
+    // ==========================================
+    match /achievements/{achievementId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin(); // ✅ Admin bisa manage achievements
+    }
+    
+    // ==========================================
+    // USER ACHIEVEMENTS
+    // ==========================================
+    match /user_achievements/{userAchievementId} {
+      allow read: if isAuthenticated() && 
+                     resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == resource.data.userId;
+      allow delete: if false;
+    }
+    
+    // ==========================================
+    // DAILY CHALLENGES
+    // ==========================================
+    match /daily_challenges/{challengeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin(); // ✅ Admin bisa manage challenges
+    }
+    
+    // ==========================================
+    // NOTIFICATIONS
+    // ==========================================
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && 
+                     resource.data.userId == request.auth.uid;
+      allow create: if isAdmin(); // ✅ Admin atau Cloud Functions
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+    }
+    
+    // ==========================================
+    // ANALYTICS/STATS
+    // ==========================================
+    match /stats/{statId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+  }
+}
