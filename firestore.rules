@@ -30,35 +30,35 @@ service cloud.firestore {
     }
     
     // ==========================================
-    // COURSES (read-only untuk users, admin bisa write)
+    // COURSES COLLECTION
     // ==========================================
     match /courses/{courseId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin(); // ✅ Admin bisa manage courses
+      allow create, update, delete: if isAdmin();
     }
     
     // ==========================================
-    // LESSONS
+    // LESSONS COLLECTION
     // ==========================================
     match /lessons/{lessonId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin(); // ✅ Admin bisa manage lessons
+      allow create, update, delete: if isAdmin();
     }
     
     // ==========================================
-    // QUIZZES - ✅ UPDATED
+    // QUIZZES COLLECTION
     // ==========================================
     match /quizzes/{quizId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin(); // ✅ Admin bisa manage quizzes
+      allow create, update, delete: if isAdmin();
     }
     
     // ==========================================
-    // QUESTIONS - ✅ UPDATED
+    // QUESTIONS COLLECTION
     // ==========================================
     match /questions/{questionId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin(); // ✅ Admin bisa manage questions
+      allow create, update, delete: if isAdmin();
     }
     
     // ==========================================
@@ -76,46 +76,48 @@ service cloud.firestore {
     }
     
     // ==========================================
-    // QUIZ ATTEMPTS - ✅ UPDATED
+    // QUIZ ATTEMPTS - ✅ FIXED
     // ==========================================
     match /quiz_attempts/{attemptId} {
+      // User bisa read attempts mereka sendiri atau admin bisa read semua
       allow read: if isAuthenticated() && 
-                     resource.data.userId == request.auth.uid;
+                     (resource.data.userId == request.auth.uid || isAdmin());
+      
+      // User bisa create attempt untuk diri sendiri
       allow create: if isAuthenticated() && 
                        request.resource.data.userId == request.auth.uid;
+      
+      // User bisa update attempt mereka sendiri
       allow update: if isAuthenticated() && 
                        resource.data.userId == request.auth.uid;
-      allow delete: if false; // Attempt tidak boleh dihapus
+      
+      // Only admin can delete attempts
+      allow delete: if isAdmin();
     }
     
     // ==========================================
-    // LEADERBOARD (read-only untuk semua user)
+    // LEADERBOARD
     // ==========================================
     match /leaderboard/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin(); // ✅ Admin bisa update leaderboard
+      allow write: if isAdmin();
     }
     
     // ==========================================
-    // ACHIEVEMENTS (read-only untuk semua user)
+    // ACHIEVEMENTS
     // ==========================================
     match /achievements/{achievementId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin(); // ✅ Admin bisa manage achievements
+      allow create, update, delete: if isAdmin();
     }
     
     // ==========================================
     // USER ACHIEVEMENTS
     // ==========================================
     match /user_achievements/{userAchievementId} {
-      allow read: if isAuthenticated() && 
-                     resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && 
-                       request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && 
-                       resource.data.userId == request.auth.uid &&
-                       request.resource.data.userId == resource.data.userId;
-      allow delete: if false;
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
     }
     
     // ==========================================
@@ -123,7 +125,7 @@ service cloud.firestore {
     // ==========================================
     match /daily_challenges/{challengeId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin(); // ✅ Admin bisa manage challenges
+      allow create, update, delete: if isAdmin();
     }
     
     // ==========================================
@@ -132,11 +134,9 @@ service cloud.firestore {
     match /notifications/{notificationId} {
       allow read: if isAuthenticated() && 
                      resource.data.userId == request.auth.uid;
-      allow create: if isAdmin(); // ✅ Admin atau Cloud Functions
-      allow update: if isAuthenticated() && 
-                       resource.data.userId == request.auth.uid;
-      allow delete: if isAuthenticated() && 
-                       resource.data.userId == request.auth.uid;
+      allow create: if isAdmin();
+      allow update, delete: if isAuthenticated() && 
+                               resource.data.userId == request.auth.uid;
     }
     
     // ==========================================
