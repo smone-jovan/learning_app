@@ -22,24 +22,34 @@ import '/../presentation/home/home_binding.dart';
 
 /// Route names untuk navigasi
 class AppRoutes {
-  static const String SPLASH = '/splash';
-  static const String LOGIN = '/login';
-  static const String REGISTER = '/register';
-  static const String FORGOT_PASSWORD = '/forgot-password';
-  static const String EMAIL_VERIFICATION = '/email-verification';
-  static const String MAIN = '/main';
-  static const String HOME = '/home';
-  static const String COURSE_LIST = '/courses';
-  static const String COURSE_DETAIL = '/course-detail';
-  static const String LESSON_VIEWER = '/lesson-viewer';
-  static const String QUIZ_LIST = '/quizzes';
-  static const String QUIZ_DETAIL = '/quiz-detail';
-  static const String QUIZ_PLAY = '/quiz-play';
-  static const String QUIZ_RESULT = '/quiz-result';
-  static const String LEADERBOARD = '/leaderboard';
-  static const String ACHIEVEMENTS = '/achievements';
-  static const String PROFILE = '/profile';
-  static const String SETTINGS = '/settings';
+  // Auth Routes
+  static const SPLASH = '/splash';
+  static const LOGIN = '/login';
+  static const REGISTER = '/register';
+  static const FORGOT_PASSWORD = '/forgot-password';
+  static const EMAIL_VERIFICATION = '/email-verification';
+
+  // Main Routes
+  static const MAIN = '/main';
+  static const HOME = '/home';
+
+  // Feature Routes
+  static const COURSES = '/courses';
+  static const COURSE_DETAIL = '/course-detail';
+  static const LESSON_VIEWER = '/lesson-viewer';
+
+  static const QUIZZES = '/quizzes';
+  static const QUIZ_DETAIL = '/quiz-detail';
+  static const QUIZ_SESSION = '/quiz-session';
+  static const QUIZ_RESULT = '/quiz-result';
+
+  static const LEADERBOARD = '/leaderboard';
+  static const ACHIEVEMENTS = '/achievements';
+  static const PROFILE = '/profile';
+  static const SETTINGS = '/settings';
+
+  // Utility Routes
+  static const NOT_FOUND = '/notfound';
 
   /// GetPages list untuk routing
   static final routes = [
@@ -84,7 +94,7 @@ class AppRoutes {
 
     // ==================== COURSE ROUTES ====================
     GetPage(
-      name: COURSE_LIST,
+      name: COURSES,
       page: () => CoursesPage(),
       binding: HomeBinding(),
     ),
@@ -101,7 +111,7 @@ class AppRoutes {
 
     // ==================== QUIZ ROUTES ====================
     GetPage(
-      name: QUIZ_LIST,
+      name: QUIZZES,
       page: () => QuizListPage(),
       binding: HomeBinding(),
     ),
@@ -111,7 +121,7 @@ class AppRoutes {
       binding: HomeBinding(),
     ),
     GetPage(
-      name: QUIZ_PLAY,
+      name: QUIZ_SESSION,
       page: () => QuizPlayPage(),
       binding: HomeBinding(),
     ),

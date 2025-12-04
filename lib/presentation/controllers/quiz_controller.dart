@@ -304,7 +304,7 @@ class QuizController extends GetxController {
     _quizTimer?.cancel();
 
     Get.offAllNamed(
-      AppRoutes.QUIZ_PLAY,
+      AppRoutes.QUIZ_SESSION,
       arguments: {'quizId': quizId},
     );
   }

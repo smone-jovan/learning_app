@@ -1,73 +1,112 @@
 import 'package:get/get.dart';
 import 'app_routes.dart';
-import 'package:learning_app/presentation/splash/splash_page.dart';
-import 'package:learning_app/presentation/splash/splash_binding.dart';
-import 'package:learning_app/presentation/auth/login_page.dart';
-import 'package:learning_app/presentation/auth/register_page.dart';
-import 'package:learning_app/presentation/auth/forgot_password_page.dart';
-import 'package:learning_app/presentation/auth/auth_binding.dart';
-import 'package:learning_app/presentation/pages/main/main_page.dart';
-import 'package:learning_app/presentation/pages/main/main_binding.dart';
-import 'package:learning_app/presentation/pages/quiz/quiz_list_page.dart';
-import 'package:learning_app/presentation/pages/quiz/quiz_detail_page.dart';
-import 'package:learning_app/presentation/pages/quiz/quiz_play_page.dart';
-import 'package:learning_app/presentation/pages/quiz/quiz_result_page.dart';
-import 'package:learning_app/presentation/pages/quiz/quiz_binding.dart';
-import 'package:learning_app/presentation/pages/achievement/achievement_page.dart';
-import 'package:learning_app/presentation/controllers/gamification_controller.dart';
+
+// Auth pages
+import '../../presentation/splash/splash_page.dart';
+import '../../presentation/auth/login_page.dart';
+import '../../presentation/auth/register_page.dart';
+import '../../presentation/auth/forgot_password_page.dart';
+
+// Main page
+import '../../presentation/pages/main/main_page.dart';
+
+// Feature pages
+import '../../presentation/pages/courses/courses_page.dart';
+import '../../presentation/pages/leaderboard/leaderboard_page.dart';
+import '../../presentation/pages/achievement/achievement_page.dart';
+import '../../presentation/pages/setting/settings_page.dart';
+
+// Controllers
+import '../../presentation/controllers/auth_controller.dart';
+import '../../presentation/controllers/gamification_controller.dart';
+import '../../presentation/controllers/home_controller.dart';
+import '../../presentation/controllers/quiz_controller.dart';
+
 /// Konfigurasi semua pages dan bindings
 class AppPages {
   static final pages = [
+    // ==========================================
+    // AUTH ROUTES
+    // ==========================================
     GetPage(
       name: AppRoutes.SPLASH,
-      page: () => SplashPage(),  // ✅ Function returning Widget
-      binding: SplashBinding(),
+      page: () => const SplashPage(),
     ),
     GetPage(
       name: AppRoutes.LOGIN,
       page: () => const LoginPage(),
-      binding: AuthBinding(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<AuthController>()) {
+          Get.lazyPut<AuthController>(() => AuthController());
+        }
+      }),
     ),
     GetPage(
       name: AppRoutes.REGISTER,
       page: () => const RegisterPage(),
-      binding: AuthBinding(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<AuthController>()) {
+          Get.lazyPut<AuthController>(() => AuthController());
+        }
+      }),
     ),
     GetPage(
       name: AppRoutes.FORGOT_PASSWORD,
       page: () => const ForgotPasswordPage(),
-      binding: AuthBinding(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<AuthController>()) {
+          Get.lazyPut<AuthController>(() => AuthController());
+        }
+      }),
     ),
+
+    // ==========================================
+    // MAIN ROUTE - ✅ INJECT SEMUA CONTROLLER
+    // ==========================================
     GetPage(
       name: AppRoutes.MAIN,
       page: () => const MainPage(),
-      binding: MainBinding(),
+      binding: BindingsBuilder(() {
+        // Auth Controller (sudah permanent, cek dulu)
+        if (!Get.isRegistered<AuthController>()) {
+          Get.put<AuthController>(AuthController(), permanent: true);
+        }
+
+        // ✅ Home Controller (untuk HomePage)
+        Get.lazyPut<HomeController>(() => HomeController());
+
+        // ✅ Quiz Controller (untuk QuizzesPage)
+        Get.lazyPut<QuizController>(() => QuizController());
+
+        // ✅ Gamification Controller (untuk AchievementsPage)
+        Get.lazyPut<GamificationController>(() => GamificationController());
+      }),
+    ),
+
+    // ==========================================
+    // FEATURE ROUTES
+    // ==========================================
+    GetPage(
+      name: AppRoutes.COURSES,
+      page: () => const CoursesPage(),
     ),
     GetPage(
-      name: AppRoutes.QUIZ_LIST,
-      page: () => const QuizListPage(),
-      binding: QuizBinding(),
-    ),
-    GetPage(
-      name: AppRoutes.QUIZ_DETAIL,
-      page: () => const QuizDetailPage(),
-      binding: QuizBinding(),
-    ),
-    GetPage(
-      name: AppRoutes.QUIZ_PLAY,
-      page: () => const QuizPlayPage(),
-      binding: QuizBinding(),
-    ),
-    GetPage(
-      name: AppRoutes.QUIZ_RESULT,
-      page: () => const QuizResultPage(),
-      binding: QuizBinding(),
+      name: AppRoutes.LEADERBOARD,
+      page: () => const LeaderboardPage(),
     ),
     GetPage(
       name: AppRoutes.ACHIEVEMENTS,
       page: () => const AchievementsPage(),
+      // Binding sudah dipindahkan ke MAIN route
+      // binding: BindingsBuilder(() { ... }),
+    ),
+    GetPage(
+      name: AppRoutes.SETTINGS,
+      page: () => const SettingsPage(),
       binding: BindingsBuilder(() {
-        Get.lazyPut<GamificationController>(() => GamificationController());
+        if (!Get.isRegistered<AuthController>()) {
+          Get.lazyPut<AuthController>(() => AuthController());
+        }
       }),
     ),
   ];

@@ -33,7 +33,7 @@ class ContinueLearningSection extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () => Get.toNamed(AppRoutes.COURSE_LIST),
+              onPressed: () => Get.toNamed(AppRoutes.COURSES),
               child: const Text('See All'),
             ),
           ],

@@ -1,80 +1,87 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:learning_app/core/constant/colors.dart';
-import 'package:learning_app/presentation/controllers/main_controller.dart';
+import '../../controllers/auth_controller.dart';
+import '../../home/home_page.dart';
+import '../courses/courses_page.dart';
+import '../quiz/quiz_list_page.dart';
+import '../leaderboard/leaderboard_page.dart';
+import '../achievement/achievement_page.dart';
+import 'package:learning_app/app/routes/app_routes.dart';
 
-// ✅ FIX: Use absolute imports untuk semua pages
-import 'package:learning_app/presentation/home/home_page.dart';
-import 'package:learning_app/presentation/pages/courses/courses_page.dart';
-import 'package:learning_app/presentation/pages/leaderboard/leaderboard_page.dart';
-import 'package:learning_app/presentation/pages/profile/profile_page.dart';
-
-class MainPage extends GetView<MainController> {
-  const MainPage({Key? key}) : super(key: key);
+class MainPage extends StatelessWidget {  // ✅ GANTI DARI GetView<MainController>
+  const MainPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // ✅ State untuk selected index (local state, tidak perlu controller)
+    final RxInt currentIndex = 0.obs;
+
+    // ✅ List pages
+    final List<Widget> pages = [
+      const HomePage(),
+      const CoursesPage(),
+      const QuizListPage(),
+      const LeaderboardPage(),
+      const AchievementsPage(),
+    ];
+
     return Scaffold(
-      body: Obx(() {
-        final index = controller.currentIndex.value;
-        return IndexedStack(
-          index: index,
-          children: [
-            _buildPage('/home'),
-            _buildPage('/courses'),
-            _buildPage('/leaderboard'),
-            _buildPage('/profile'),
-          ],
-        );
-      }),
+      appBar: AppBar(
+        title: const Text('Learning App'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_rounded),
+            onPressed: () => Get.toNamed(AppRoutes.SETTINGS),
+            tooltip: 'Settings',
+          ),
+        ],
+      ),
+      
+      // ✅ Body dengan IndexedStack
+      body: Obx(
+        () => IndexedStack(
+          index: currentIndex.value,
+          children: pages,
+        ),
+      ),
+      
+      // ✅ Bottom Navigation Bar
       bottomNavigationBar: Obx(
-        () => BottomNavigationBar(
-          currentIndex: controller.currentIndex.value,
-          onTap: controller.changePage,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.textSecondary,
-          items: const [
-            BottomNavigationBarItem(
+        () => NavigationBar(
+          selectedIndex: currentIndex.value,
+          onDestinationSelected: (index) {
+            currentIndex.value = index;
+          },
+          destinations: const [
+            NavigationDestination(
               icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
+              selectedIcon: Icon(Icons.home_rounded),
               label: 'Home',
             ),
-            BottomNavigationBarItem(
+            NavigationDestination(
               icon: Icon(Icons.school_outlined),
-              activeIcon: Icon(Icons.school),
+              selectedIcon: Icon(Icons.school_rounded),
               label: 'Courses',
             ),
-            BottomNavigationBarItem(
+            NavigationDestination(
+              icon: Icon(Icons.quiz_outlined),
+              selectedIcon: Icon(Icons.quiz_rounded),
+              label: 'Quizzes',
+            ),
+            NavigationDestination(
               icon: Icon(Icons.leaderboard_outlined),
-              activeIcon: Icon(Icons.leaderboard),
+              selectedIcon: Icon(Icons.leaderboard_rounded),
               label: 'Leaderboard',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
+            NavigationDestination(
+              icon: Icon(Icons.emoji_events_outlined),
+              selectedIcon: Icon(Icons.emoji_events_rounded),
+              label: 'Achievements',
             ),
           ],
         ),
       ),
     );
   }
-
-  Widget _buildPage(String route) {
-    switch (route) {
-      case '/home':
-        return const HomePage();
-      case '/courses':
-        return const CoursesPage();
-      case '/leaderboard':
-        return const LeaderboardPage();
-      case '/profile':
-        return const ProfilePage();
-      default:
-        return const HomePage();
-    }
-  }
 }
-
-// Import pages at top of file

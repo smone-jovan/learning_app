@@ -390,7 +390,7 @@ class QuizDetailPage extends GetView<QuizController> {
                 onPressed: () {
                   // Navigate to quiz play
                   Get.toNamed(
-                    AppRoutes.QUIZ_PLAY,
+                    AppRoutes.QUIZ_SESSION,
                     arguments: {'quizId': quizId},
                   );
                 },

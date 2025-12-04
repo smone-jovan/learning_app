@@ -1,27 +1,26 @@
+// File: lib/presentation/controllers/gamification_controller.dart
 import 'package:get/get.dart';
-import 'package:learning_app/app/data/models/achievement_model.dart';
-import 'package:learning_app/app/providers/achievement_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import '../../app/data/models/achievement_model.dart';
+import '../../app/data/models/user_model.dart';
+import '../../core/constant/firebase_collections.dart';
 import 'auth_controller.dart';
+import 'dart:math';
 
-/// Gamification Controller - Manages achievements and rewards
 class GamificationController extends GetxController {
-  final AchievementProvider _achievementProvider = AchievementProvider();
+  final AuthController authController = Get.find<AuthController>();
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  // Observable lists
+  // Observable variables - HANYA YANG DIPAKAI
   final RxList<AchievementModel> achievements = <AchievementModel>[].obs;
-  final RxList<String> userAchievements = <String>[].obs;
-  final RxString selectedAchievementCategory = 'All'.obs;
-
-  // Loading state
+  final RxList<String> userAchievements = <String>[].obs; // List of unlocked achievementIds
+  
+  // UI state
   final RxBool isLoading = false.obs;
-
-  @override
-  void onInit() {
-    super.onInit();
-    loadAchievements();
-  }
-
-  /// Get filtered achievements based on category
+  final RxString selectedAchievementCategory = 'All'.obs;
+  
+  // Computed property untuk filtered achievements
   List<AchievementModel> get filteredAchievements {
     if (selectedAchievementCategory.value == 'All') {
       return achievements;
@@ -33,34 +32,56 @@ class GamificationController extends GetxController {
         .toList();
   }
 
-  /// Load all achievements
+  @override
+  void onInit() {
+    super.onInit();
+    loadAchievements();
+    loadUserAchievements();
+  }
+
+  /// Load all available achievements
   Future<void> loadAchievements() async {
     try {
       isLoading.value = true;
+      
+      final querySnapshot = await firestore
+          .collection(FirebaseCollections.achievements)
+          .orderBy('rarity')
+          .orderBy('pointsReward')
+          .get();
 
-      // Get all achievements
-      final allAchievements = await _achievementProvider.getAllAchievements();
-      achievements.value = allAchievements;
+      achievements.value = querySnapshot.docs
+          .map((doc) => AchievementModel.fromFirestore(doc))
+          .toList();
 
-      // Get user achievements
-      final authController = Get.find<AuthController>();
-      final currentUser = authController.currentUser;
-
-      if (currentUser != null) {
-        final userAchievementsList =
-            await _achievementProvider.getUserAchievements(currentUser.uid);
-        userAchievements.value =
-            userAchievementsList.map((a) => a.achievementId).toList();
-      }
     } catch (e) {
       print('Error loading achievements: $e');
-      Get.snackbar(
-        'Error',
-        'Failed to load achievements',
-        snackPosition: SnackPosition.BOTTOM,
-      );
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// Load user's unlocked achievement IDs
+  Future<void> loadUserAchievements() async {
+    try {
+      final userId = authController.currentUser?.uid;
+      if (userId == null) return;
+
+      final querySnapshot = await firestore
+          .collection(FirebaseCollections.userAchievements)
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      // Ambil hanya achievementId saja (List<String>)
+      userAchievements.value = querySnapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            return data['achievementId'] as String;
+          })
+          .toList();
+
+    } catch (e) {
+      print('Error loading user achievements: $e');
     }
   }
 
@@ -69,41 +90,53 @@ class GamificationController extends GetxController {
     selectedAchievementCategory.value = category;
   }
 
-  /// Check and unlock achievement
-  Future<void> checkAndUnlockAchievement({
-    required String category,
-    required int currentProgress,
-  }) async {
+  /// Check and unlock achievements (bisa dipanggil dari luar)
+  Future<void> checkAchievements() async {
     try {
-      final authController = Get.find<AuthController>();
-      final currentUser = authController.currentUser;
+      final userId = authController.currentUser?.uid;
+      if (userId == null) return;
 
-      if (currentUser == null) return;
+      // Get user data dari Firestore
+      final userDoc = await firestore
+          .collection(FirebaseCollections.users)
+          .doc(userId)
+          .get();
+      
+      if (!userDoc.exists) return;
+      
+      final userData = UserModel.fromFirestore(userDoc);
 
-      final userId = currentUser.uid;
+      // Get quiz count
+      final quizCount = userData.completedQuizzes?.length ?? 0;
 
-      // Find achievements that match criteria
-      final eligibleAchievements = achievements.where((achievement) {
-        return achievement.category.toLowerCase() == category.toLowerCase() &&
-            currentProgress >= achievement.requirement &&
-            !userAchievements.contains(achievement.achievementId);
-      }).toList();
+      // Get course count
+      final enrolledCount = userData.enrolledCourses?.length ?? 0;
 
-      // Unlock eligible achievements
-      for (var achievement in eligibleAchievements) {
-        final unlocked = await _achievementProvider.unlockAchievement(
-          userId: userId,
-          achievementId: achievement.achievementId,
-        );
+      // Check each locked achievement
+      final lockedAchievements = achievements
+          .where((a) => !userAchievements.contains(a.achievementId))
+          .toList();
 
-        if (unlocked) {
-          userAchievements.add(achievement.achievementId);
+      for (var achievement in lockedAchievements) {
+        bool shouldUnlock = false;
 
-          // Show notification
-          _showAchievementUnlockedNotification(achievement);
+        switch (achievement.category.toLowerCase()) {
+          case 'quiz':
+            shouldUnlock = quizCount >= achievement.requirement;
+            break;
+          case 'course':
+            shouldUnlock = enrolledCount >= achievement.requirement;
+            break;
+          case 'streak':
+            shouldUnlock = (userData.currentStreak ?? 0) >= achievement.requirement;
+            break;
+          case 'points':
+            shouldUnlock = (userData.points ?? 0) >= achievement.requirement;
+            break;
+        }
 
-          // Award rewards
-          await _awardAchievementRewards(achievement);
+        if (shouldUnlock) {
+          await unlockAchievement(achievement);
         }
       }
     } catch (e) {
@@ -111,53 +144,47 @@ class GamificationController extends GetxController {
     }
   }
 
-  /// Show achievement unlocked notification
-  void _showAchievementUnlockedNotification(AchievementModel achievement) {
+  /// Unlock achievement
+  Future<void> unlockAchievement(AchievementModel achievement) async {
+    try {
+      final userId = authController.currentUser?.uid;
+      if (userId == null) return;
+
+      // Import user_achievement_model dulu
+      final userAchievementDoc = firestore
+          .collection(FirebaseCollections.userAchievements)
+          .doc();
+
+      // Simplified - tanpa UserAchievementModel
+      await userAchievementDoc.set({
+        'userAchievementId': userAchievementDoc.id,
+        'userId': userId,
+        'achievementId': achievement.achievementId,
+        'unlockedAt': FieldValue.serverTimestamp(),
+        'isClaimed': false,
+        'claimedAt': null,
+      });
+
+      // Reload achievements
+      await loadUserAchievements();
+
+      // Show notification
+      showAchievementNotification(achievement);
+    } catch (e) {
+      print('Error unlocking achievement: $e');
+    }
+  }
+
+  /// Show achievement notification
+  void showAchievementNotification(AchievementModel achievement) {
     Get.snackbar(
       '🏆 Achievement Unlocked!',
       achievement.title,
       snackPosition: SnackPosition.TOP,
-      duration: const Duration(seconds: 3),
+      duration: const Duration(seconds: 4),
+      backgroundColor: Get.theme.colorScheme.primary.withOpacity(0.9),
+      colorText: Get.theme.colorScheme.onPrimary,
+      icon: const Icon(Icons.emoji_events_rounded, color: Colors.white),
     );
-  }
-
-  /// Award achievement rewards (points and coins)
-  Future<void> _awardAchievementRewards(AchievementModel achievement) async {
-    try {
-      final authController = Get.find<AuthController>();
-      final currentUser = authController.currentUser;
-
-      if (currentUser == null) return;
-
-      // Award points
-      if (achievement.pointsReward > 0) {
-        // Update user points in Firestore
-        // This should be handled by UserRepository
-        print('Awarded ${achievement.pointsReward} points');
-      }
-
-      // Award coins
-      if (achievement.coinsReward > 0) {
-        // Update user coins in Firestore
-        // This should be handled by UserRepository
-        print('Awarded ${achievement.coinsReward} coins');
-      }
-    } catch (e) {
-      print('Error awarding achievement rewards: $e');
-    }
-  }
-
-  /// Get achievement by ID
-  AchievementModel? getAchievementById(String achievementId) {
-    try {
-      return achievements.firstWhere((a) => a.achievementId == achievementId);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /// Check if achievement is unlocked
-  bool isAchievementUnlocked(String achievementId) {
-    return userAchievements.contains(achievementId);
   }
 }

@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'splash_controller.dart';
 
 class SplashPage extends StatefulWidget {
+  const SplashPage({super.key});
+
   @override
   _SplashPageState createState() => _SplashPageState();
 }

@@ -410,7 +410,7 @@ class HomePage extends GetView<HomeController> {
             if (dailyQuiz?.description != null) ...[
               const SizedBox(height: 8),
               Text(
-                dailyQuiz!.description!,
+                dailyQuiz!.description,
                 style: Get.textTheme.bodyMedium?.copyWith(
                   color: Colors.white70,
                 ),

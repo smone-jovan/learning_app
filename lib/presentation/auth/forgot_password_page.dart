@@ -1,86 +1,103 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:learning_app/core/constant/colors.dart';
 import '../controllers/auth_controller.dart';
 
-class ForgotPasswordPage extends GetView<AuthController> {
+class ForgotPasswordPage extends StatelessWidget {
   const ForgotPasswordPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final emailController = TextEditingController();
+    final AuthController controller = Get.find<AuthController>();
+    
+    // ✅ TAMBAHAN - Local TextEditingController untuk email
+    final TextEditingController emailController = TextEditingController();
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        title: const Text('Reset Password'),
+        centerTitle: true,
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Reset Password',
-                style: Get.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Icon
+            Icon(
+              Icons.lock_reset_rounded,
+              size: 80,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 24),
+            
+            // Title
+            Text(
+              'Forgot Password?',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            
+            // Subtitle
+            Text(
+              'Enter your email and we\'ll send you a link to reset your password',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            
+            // Email Field
+            TextFormField(
+              controller: emailController, // ✅ USE LOCAL CONTROLLER
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: 'Email',
+                prefixIcon: const Icon(Icons.email_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Enter your email to receive reset link',
-                style: Get.textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 32),
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Obx(() {
-                return SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: controller.isLoading.value
-                        ? null
-                        : () {
-                            final email = emailController.text.trim();
-                            if (email.isEmpty) {
-                              Get.snackbar(
-                                'Error',
-                                'Please enter your email',
-                              );
-                              return;
-                            }
-                            controller.resetPassword(email: email);
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Reset Button
+            Obx(() => ElevatedButton(
+                  onPressed: controller.isLoading.value
+                      ? null
+                      : () {
+                          // ✅ FIX - Pass email parameter
+                          controller.resetPassword(emailController.text.trim());
+                        },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: controller.isLoading.value
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('Send Reset Link'),
                   ),
-                );
-              }),
-            ],
-          ),
+                  child: controller.isLoading.value
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(
+                          'Send Reset Link',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                )),
+            const SizedBox(height: 16),
+            
+            // Back to Login
+            TextButton(
+              onPressed: () => Get.back(),
+              child: const Text('Back to Login'),
+            ),
+          ],
         ),
       ),
     );

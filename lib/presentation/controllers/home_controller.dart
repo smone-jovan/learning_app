@@ -1,34 +1,97 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:learning_app/app/data/models/user_model.dart';
 import 'package:learning_app/app/data/models/quiz_model.dart';
 import 'package:learning_app/app/data/models/course_model.dart';
+import 'package:learning_app/app/data/services/firebase_service.dart';
 
 /// Home Controller - Manage dashboard data dan logic
 class HomeController extends GetxController {
-  // ========== OBSERVABLES ==========
-  final Rx<UserModel?> userModel = Rx(null);
-  final Rx<QuizModel?> dailyChallenge = Rx(null);
-  final RxList<CourseModel> recommendedCourses = RxList([]);
+  // Providers / services
+  late final FirebaseService _firebaseService;
+
+  // Observables
+  final Rx<UserModel?> userModel = Rx<UserModel?>(null);
+  final Rx<QuizModel?> dailyChallenge = Rx<QuizModel?>(null);
+  final RxList<CourseModel> recommendedCourses = RxList<CourseModel>([]);
   final RxBool isLoading = RxBool(false);
   final RxBool isRefreshing = RxBool(false);
+
+  // Store data untuk continue learning
+  final Rx<Map<String, dynamic>> continueLearning =
+      Rx<Map<String, dynamic>>({});
+
+  StreamSubscription<DocumentSnapshot>? _profileSub;
 
   @override
   void onInit() {
     super.onInit();
+    _firebaseService = FirebaseService();
     _loadDashboardData();
+    _subscribeToUserProfile();
   }
 
-  /// ========== LOAD DASHBOARD DATA ==========
+  void _subscribeToUserProfile() {
+    final uid = _firebaseService.getCurrentUserUID();
+    if (uid == null) return;
+
+    // Cancel previous subscription if any
+    _profileSub?.cancel();
+
+    _profileSub = _firebaseService.getUserProfileStream(uid).listen((doc) {
+      if (!doc.exists) return;
+      final data = (doc.data() as Map<String, dynamic>?) ?? {};
+
+      // Map Firestore fields to your UserModel (adjust keys if your Firestore schema differs)
+      final mapped = UserModel(
+        userId: uid,
+        displayName: data['displayName'] ?? data['fullName'] ?? '',
+        email: data['email'] ?? '',
+        points: (data['points'] ?? 0) as int,
+        coins: (data['coins'] ?? 0) as int,
+        level: data['level'] ?? 1,
+        currentStreak: (data['streak'] ?? data['currentStreak'] ?? 0) as int,
+        longestStreak: (data['longestStreak'] ?? 0) as int,
+        lastActiveDate: _parseTimestamp(data['lastActiveDate']),
+        // keep other fields as needed
+      );
+
+      userModel.value = mapped;
+    }, onError: (e) {
+      print('Error listening to profile: $e');
+    });
+  }
+
+  DateTime? _parseTimestamp(dynamic v) {
+    if (v == null) return null;
+    if (v is Timestamp) return v.toDate();
+    if (v is DateTime) return v;
+    if (v is String) {
+      try {
+        return DateTime.parse(v);
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /// Load dashboard data on init
   void _loadDashboardData() async {
     isLoading.value = true;
     try {
-      // TODO: Load from Firebase using userModel.fromFirestore()
-      _loadDummyData();
+      // load non-profile content (daily challenge, recommended courses)
+      await Future.wait([
+        _loadDailyChallenge(),
+        _loadRecommendedCourses(),
+        _loadContinueLearning(),
+      ]);
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Failed to load dashboard: $e',
+        'Failed to load dashboard data: $e',
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
@@ -36,52 +99,87 @@ class HomeController extends GetxController {
     }
   }
 
-  /// ========== DUMMY DATA (Replace with Firebase) ==========
-  void _loadDummyData() {
-    userModel.value = UserModel(
-      userId: '1',
-      displayName: 'Learner',
-      email: 'learner@example.com',
-      points: 250,
-      coins: 50,
-      level: 2,
-      currentStreak: 5,
-      longestStreak: 12,
-      lastActiveDate: DateTime.now(),
-    );
+  /// Load daily challenge
+  Future<void> _loadDailyChallenge() async {
+    try {
+      final doc = await _firebaseService.getDailyChallenge();
+      if (doc != null && doc.exists) {
+        final d = doc.data() as Map<String, dynamic>;
+        dailyChallenge.value = QuizModel(
+          quizId: doc.id,
+          title: d['title'] ?? '',
+          description: d['description'] ?? '',
+          category: d['category'] ?? '',       // ADD THIS
+          difficulty: d['difficulty'] ?? '',   // ADD THIS
+          totalQuestions: d['totalQuestions'] ?? 0, // ADD THIS
+          // map other fields if needed
+        );
+      }
+    } catch (e) {
+      print('Error loading daily challenge: $e');
+      // Don't show error snackbar jika daily challenge kosong
+    }
+  }
 
-    // ✅ SESUAI DENGAN QuizModel LU
-    dailyChallenge.value = QuizModel(
-      quizId: '1',
-      title: 'Daily Quiz Challenge',
-      description: 'Answer 5 questions to earn 100 XP',
-      category: 'General Knowledge',
-      difficulty: 'Medium',
-      totalQuestions: 5,
-      timeLimit: 600, // 10 menit
-      passingScore: 70,
-      pointsReward: 100,
-      coinsReward: 10,
-      isPremium: false,
-      totalAttempts: 0,
-    );
+  /// Load recommended courses
+  Future<void> _loadRecommendedCourses() async {
+    try {
+      final docs = await _firebaseService.getCourses();
+      recommendedCourses.value = docs
+          .map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return CourseModel(
+              courseId: doc.id,
+              title: data['title'] ?? '',
+              description: data['description'] ?? '',
+              category: data['category'] ?? '',
+              level: data['level']?.toString() ?? 'Beginner',
+            );
+          })
+          .toList()
+          .cast<CourseModel>();
+    } catch (e) {
+      print('Error loading recommended courses: $e');
+    }
+  }
 
-    recommendedCourses.value = [
-      CourseModel(
-        courseId: '1',
-        title: 'Flutter Basics',
-        description: 'Learn Flutter from scratch',
-        category: 'Mobile Development',
-        level: 'Beginner',
-      ),
-      CourseModel(
-        courseId: '2',
-        title: 'Dart Programming',
-        description: 'Master Dart language',
-        category: 'Programming',
-        level: 'Beginner',
-      ),
-    ];
+  /// Load continue learning data
+  Future<void> _loadContinueLearning() async {
+    try {
+      // You can fetch user-specific continue learning if needed
+      final uid = _firebaseService.getCurrentUserUID();
+      if (uid != null) {
+        // example: fetch enrolled courses or progress
+      }
+    } catch (e) {
+      print('Error loading continue learning: $e');
+    }
+  }
+
+  /// Refresh dashboard data
+  Future<void> refreshDashboard() async {
+    isRefreshing.value = true;
+    try {
+      await Future.wait([
+        _loadDailyChallenge(),
+        _loadRecommendedCourses(),
+        _loadContinueLearning(),
+      ]);
+      Get.snackbar(
+        'Success',
+        'Dashboard updated',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: Duration(seconds: 2),
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to refresh dashboard',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isRefreshing.value = false;
+    }
   }
 
   /// ========== GREETING EMOJI ==========
@@ -104,29 +202,6 @@ class HomeController extends GetxController {
       return 'Amazing consistency! 🚀';
     } else {
       return 'Incredible dedication! ⭐';
-    }
-  }
-
-  /// ========== REFRESH DASHBOARD ==========
-  Future<void> refreshDashboard() async {
-    isRefreshing.value = true;
-    try {
-      await Future.delayed(Duration(seconds: 1));
-      _loadDummyData();
-      Get.snackbar(
-        'Success',
-        'Dashboard updated',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: Duration(seconds: 2),
-      );
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to refresh dashboard',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } finally {
-      isRefreshing.value = false;
     }
   }
 
@@ -222,10 +297,15 @@ class HomeController extends GetxController {
   /// ========== LOG ACTIVITY ==========
   Future<void> logActivity(String activity) async {
     try {
-      // TODO: Log to Firebase
-      print('✅ Activity logged: $activity');
+      final uid = _firebaseService.getCurrentUserUID();
+      if (uid != null) {
+        // you can implement a firebase_service method to log activity
+        await _firebaseService.updateUserProfile(uid, {
+          'lastActivity': Timestamp.now(),
+        });
+      }
     } catch (e) {
-      print('❌ Error logging activity: $e');
+      print('Error logging activity: $e');
     }
   }
 
@@ -236,24 +316,67 @@ class HomeController extends GetxController {
     required bool isStreak,
   }) async {
     try {
-      if (userModel.value != null) {
-        final updatedUser = userModel.value!.copyWith(
-          points: (userModel.value?.points ?? 0) + pointsEarned,
-          coins: (userModel.value?.coins ?? 0) + coinsEarned,
-          currentStreak:
-              isStreak ? (userModel.value?.currentStreak ?? 0) + 1 : 0,
-          lastActiveDate: DateTime.now(),
-        );
-        userModel.value = updatedUser;
-        // TODO: Save to Firebase
+      final uid = _firebaseService.getCurrentUserUID();
+      if (uid == null) {
+        print('No user to update');
+        return;
       }
+
+      final current = userModel.value;
+      final newPoints = (current?.points ?? 0) + pointsEarned;
+      final newCoins = (current?.coins ?? 0) + coinsEarned;
+      final newStreak = isStreak ? (current?.currentStreak ?? 0) + 1 : 0;
+
+      // Update local state
+      userModel.value = current?.copyWith(
+            points: newPoints,
+            coins: newCoins,
+            currentStreak: newStreak,
+            lastActiveDate: DateTime.now(),
+          ) ??
+          UserModel(
+            userId: uid,
+            displayName: current?.displayName ?? '',
+            email: current?.email ?? '',
+            points: newPoints,
+            coins: newCoins,
+            level: current?.level ?? 1,
+            currentStreak: newStreak,
+            longestStreak: current?.longestStreak ?? newStreak,
+            lastActiveDate: DateTime.now(),
+          );
+
+      // Persist to Firestore
+      await _firebaseService.updateUserProfile(uid, {
+        'points': newPoints,
+        'coins': newCoins,
+        'streak': newStreak,
+        'lastActiveDate': Timestamp.now(),
+      });
     } catch (e) {
-      print('❌ Error updating user stats: $e');
+      print('Error updating user stats: $e');
+    }
+  }
+
+  /// Update level (and persist)
+  Future<void> updateLevel(int newLevel) async {
+    try {
+      final uid = _firebaseService.getCurrentUserUID();
+      if (uid == null) return;
+
+      userModel.value = userModel.value?.copyWith(level: newLevel);
+      await _firebaseService.updateUserProfile(uid, {
+        'level': newLevel,
+        'updatedAt': Timestamp.now(),
+      });
+    } catch (e) {
+      print('Error updating level: $e');
     }
   }
 
   @override
   void onClose() {
+    _profileSub?.cancel();
     super.onClose();
   }
 }
