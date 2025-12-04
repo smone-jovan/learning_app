@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.learning_app"
+    namespace = "com.Jali.learningapp"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.learning_app"
+        applicationId = "com.Jali.learningapp"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode.toString().toInt()
