@@ -13,6 +13,7 @@ class CourseModel {
   final bool isPremium;
   final int pointsReward;
   final int coinsReward;
+  final double rating; // ✅ Added rating field
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -29,9 +30,13 @@ class CourseModel {
     this.isPremium = false,
     this.pointsReward = 500,
     this.coinsReward = 250,
+    this.rating = 0.0, // ✅ Default rating
     required this.createdAt,
     this.updatedAt,
   });
+
+  // ✅ Getter for totalLessons (alias for lessonsCount)
+  int get totalLessons => lessonsCount;
 
   factory CourseModel.fromFirestore(Map<String, dynamic> data, String id) {
     return CourseModel(
@@ -47,6 +52,7 @@ class CourseModel {
       isPremium: data['isPremium'] ?? false,
       pointsReward: data['pointsReward'] ?? 500,
       coinsReward: data['coinsReward'] ?? 250,
+      rating: (data['rating'] as num?)?.toDouble() ?? 0.0, // ✅ Parse rating
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
     );
@@ -65,6 +71,7 @@ class CourseModel {
       'isPremium': isPremium,
       'pointsReward': pointsReward,
       'coinsReward': coinsReward,
+      'rating': rating, // ✅ Save rating
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
     };
