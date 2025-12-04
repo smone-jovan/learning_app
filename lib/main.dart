@@ -9,6 +9,7 @@ import 'app/data/services/local_storage_services.dart';
 import 'core/theme/app_theme.dart';
 import 'app/data/seeds/seed_runner.dart';
 import 'presentation/controllers/auth_controller.dart';
+import 'presentation/controllers/settings_controller.dart'; // ✅ ADDED
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,9 +22,11 @@ void main() async {
   
   // Initialize AuthController as permanent
   Get.put(AuthController(), permanent: true);
+  
+  // ✅ Initialize SettingsController as permanent
+  Get.put(SettingsController(), permanent: true);
 
-  // ✅ UPDATED - Seed data hanya jalan jika user sudah login
-  // Akan dijalankan dengan delay untuk menghindari race condition
+  // Seed data hanya jalan jika user sudah login
   Future.delayed(const Duration(seconds: 3), () {
     SeedRunner.runIfAuthenticated();
   });
@@ -36,12 +39,15 @@ class MyApp extends StatelessWidget {
  
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
+    // ✅ Get SettingsController
+    final settingsController = Get.find<SettingsController>();
+    
+    return Obx(() => GetMaterialApp( // ✅ Wrap dengan Obx untuk reactive theme
       title: 'Learning App',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: settingsController.themeMode.value, // ✅ Dynamic theme
       
       // Initial route
       initialRoute: _getInitialRoute(),
@@ -49,12 +55,12 @@ class MyApp extends StatelessWidget {
       // All pages
       getPages: AppPages.pages,
       
-      // ✅ Unknown route handler
+      // Unknown route handler
       unknownRoute: GetPage(
         name: AppRoutes.NOT_FOUND,
         page: () => const NotFoundPage(),
       ),
-    );
+    ));
   }
   
   String _getInitialRoute() {
