@@ -53,8 +53,6 @@ class QuizSeed {
 
   /// Get sample quizzes data
   static List<QuizModel> _getSampleQuizzes() {
-    const uuid = Uuid();
-
     return [
       QuizModel(
         quizId: 'flutter_basics_001',
@@ -144,7 +142,7 @@ class QuizSeed {
         QuestionModel(
           questionId: uuid.v4(),
           quizId: quizId,
-          questionType: 'multiple_choice',
+          type: 'multiple_choice',
           questionText: 'What is Flutter?',
           options: [
             'A mobile development framework',
@@ -161,7 +159,7 @@ class QuizSeed {
         QuestionModel(
           questionId: uuid.v4(),
           quizId: quizId,
-          questionType: 'multiple_choice',
+          type: 'multiple_choice',
           questionText: 'Which programming language is used in Flutter?',
           options: [
             'Java',
@@ -177,7 +175,7 @@ class QuizSeed {
         QuestionModel(
           questionId: uuid.v4(),
           quizId: quizId,
-          questionType: 'multiple_choice',
+          type: 'multiple_choice',
           questionText: 'What is a Widget in Flutter?',
           options: [
             'A database',
@@ -194,7 +192,7 @@ class QuizSeed {
         QuestionModel(
           questionId: uuid.v4(),
           quizId: quizId,
-          questionType: 'multiple_choice',
+          type: 'multiple_choice',
           questionText:
               'Which widget is used for creating a scrollable list?',
           options: [
@@ -212,7 +210,7 @@ class QuizSeed {
         QuestionModel(
           questionId: uuid.v4(),
           quizId: quizId,
-          questionType: 'multiple_choice',
+          type: 'multiple_choice',
           questionText: 'What is StatelessWidget?',
           options: [
             'A widget that can change',
@@ -229,7 +227,7 @@ class QuizSeed {
         QuestionModel(
           questionId: uuid.v4(),
           quizId: quizId,
-          questionType: 'multiple_choice',
+          type: 'multiple_choice',
           questionText: 'What is StatefulWidget?',
           options: [
             'A widget that never changes',
@@ -246,7 +244,7 @@ class QuizSeed {
         QuestionModel(
           questionId: uuid.v4(),
           quizId: quizId,
-          questionType: 'multiple_choice',
+          type: 'multiple_choice',
           questionText: 'Which command is used to create a new Flutter project?',
           options: [
             'flutter create',
@@ -263,7 +261,7 @@ class QuizSeed {
         QuestionModel(
           questionId: uuid.v4(),
           quizId: quizId,
-          questionType: 'multiple_choice',
+          type: 'multiple_choice',
           questionText: 'What is Hot Reload in Flutter?',
           options: [
             'Restarting the app',
@@ -280,7 +278,7 @@ class QuizSeed {
         QuestionModel(
           questionId: uuid.v4(),
           quizId: quizId,
-          questionType: 'multiple_choice',
+          type: 'multiple_choice',
           questionText: 'Which widget is used for horizontal layout?',
           options: [
             'Column',
@@ -297,7 +295,7 @@ class QuizSeed {
         QuestionModel(
           questionId: uuid.v4(),
           quizId: quizId,
-          questionType: 'multiple_choice',
+          type: 'multiple_choice',
           questionText: 'What is the main entry point of a Flutter app?',
           options: [
             'start() function',
