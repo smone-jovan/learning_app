@@ -83,7 +83,7 @@ lib/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/learning_app.git
+   git clone https://github.com/smone-jovan/learning_app.git
    cd learning_app
    ```
 
@@ -262,7 +262,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 👨‍💻 Author
 
 **Your Name**
-- GitHub: [@ySMONE](https://github.com/smone-jovan)
+- GitHub: [@SMONE](https://github.com/smone-jovan)
 - Email: ntar aja
 
 ---
