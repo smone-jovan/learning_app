@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/auth_controller.dart';
+import '../../../app/routes/app_routes.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -89,6 +90,84 @@ class SettingsPage extends StatelessWidget {
           ),
           
           const SizedBox(height: 24),
+          
+          // ==========================================
+          // ADMIN MENU - ✅ BARU
+          // ==========================================
+          Obx(() {
+            final user = authController.userModel.value;
+            final isAdmin = user?.isAdmin ?? false;
+            
+            if (!isAdmin) return const SizedBox.shrink();
+            
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'ADMIN',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Admin Tools',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Card(
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: Icon(
+                          Icons.quiz_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        title: const Text('Manage Quizzes'),
+                        subtitle: const Text('Create and edit quizzes'),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () {
+                          Get.toNamed(AppRoutes.ADMIN_QUIZ);
+                        },
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: Icon(
+                          Icons.question_answer_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        title: const Text('Manage Questions'),
+                        subtitle: const Text('Create and edit questions'),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () {
+                          Get.toNamed(AppRoutes.ADMIN_QUESTION);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+            );
+          }),
           
           // ==========================================
           // ACCOUNT SETTINGS
@@ -263,7 +342,7 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 32),
           
           // ==========================================
-          // LOGOUT BUTTON - ✅ YANG BERFUNGSI
+          // LOGOUT BUTTON
           // ==========================================
           Obx(() => ElevatedButton.icon(
             onPressed: authController.isLoading.value 
@@ -305,7 +384,6 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  // ✅ Helper widget untuk stats
   Widget _buildStatItem(
     BuildContext context,
     String label,
@@ -336,7 +414,6 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  // ✅ LOGOUT CONFIRMATION DIALOG
   void _showLogoutDialog(BuildContext context, AuthController authController) {
     Get.dialog(
       AlertDialog(
@@ -360,8 +437,8 @@ class SettingsPage extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              Get.back(); // Close dialog
-              authController.logout(); // ✅ CALL LOGOUT METHOD
+              Get.back();
+              authController.logout();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
