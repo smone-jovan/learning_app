@@ -134,6 +134,8 @@ class HomeController extends GetxController {
               description: data['description'] ?? '',
               category: data['category'] ?? '',
               level: data['level']?.toString() ?? 'Beginner',
+              // ✅ Add createdAt parameter
+              createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
             );
           })
           .toList()
