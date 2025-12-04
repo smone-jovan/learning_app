@@ -28,35 +28,48 @@ class CoursesPage extends GetView<CourseController> {
         ],
       ),
       body: Obx(() {
-        if (controller.isLoading.value) {
+        // 🆕 FIX: Check loading state dengan condition untuk avoid double indicator
+        if (controller.isLoading.value && !controller.isRefreshing.value) {
           return const Center(
             child: CircularProgressIndicator(),
           );
         }
 
+        // 🆕 FIX: Empty state wrapped dengan RefreshIndicator agar bisa pull
         if (controller.courses.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+          return RefreshIndicator(
+            onRefresh: controller.refreshCourses, // 🆕 Method baru
+            child: ListView( // 🆕 WRAP dengan ListView untuk enable scroll
+              physics: const AlwaysScrollableScrollPhysics(), // 🆕 CRITICAL
               children: [
-                Icon(
-                  Icons.school_rounded,
-                  size: 80,
-                  color: AppColors.textSecondary.withOpacity(0.5),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No Courses Available',
-                  style: Get.textTheme.titleLarge?.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Courses will be added soon',
-                  style: Get.textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.school_rounded,
+                          size: 80,
+                          color: AppColors.textSecondary.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No Courses Available',
+                          style: Get.textTheme.titleLarge?.copyWith(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Pull down to refresh',
+                          style: Get.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -64,9 +77,11 @@ class CoursesPage extends GetView<CourseController> {
           );
         }
 
+        // 🆕 FIX: Update onRefresh method
         return RefreshIndicator(
-          onRefresh: controller.loadCourses,
+          onRefresh: controller.refreshCourses, // 🆕 Ganti dari loadCourses ke refreshCourses
           child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(), // 🆕 TAMBAH ini
             padding: const EdgeInsets.all(16),
             itemCount: controller.filteredCourses.length,
             itemBuilder: (context, index) {
