@@ -8,6 +8,7 @@ import 'package:learning_app/app/data/repositories/user_repository.dart';
 import 'package:learning_app/app/routes/app_routes.dart';
 import 'package:uuid/uuid.dart';
 import 'auth_controller.dart';
+import '../pages/quiz/quiz_result_page.dart';
 
 class QuizController extends GetxController {
   final QuizProvider _quizProvider = QuizProvider();
