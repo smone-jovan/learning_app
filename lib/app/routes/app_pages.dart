@@ -16,6 +16,12 @@ import '../../presentation/pages/leaderboard/leaderboard_page.dart';
 import '../../presentation/pages/achievement/achievement_page.dart';
 import '../../presentation/pages/setting/settings_page.dart';
 
+// ✅ Quiz pages
+import '../../presentation/pages/quiz/quiz_list_page.dart';
+import '../../presentation/pages/quiz/quiz_detail_page.dart';
+import '../../presentation/pages/quiz/quiz_play_page.dart';
+import '../../presentation/pages/quiz/quiz_result_page.dart';
+
 // ✅ Admin pages
 import '../../presentation/pages/admin/admin_quiz_page.dart';
 import '../../presentation/pages/admin/admin_question_page.dart';
@@ -113,7 +119,47 @@ class AppPages {
     ),
 
     // ==========================================
-    // ADMIN ROUTES - ✅ BARU
+    // QUIZ ROUTES - ✅ UPDATED
+    // ==========================================
+    GetPage(
+      name: AppRoutes.QUIZZES,
+      page: () => const QuizListPage(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<QuizController>()) {
+          Get.lazyPut<QuizController>(() => QuizController());
+        }
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.QUIZ_DETAIL,
+      page: () => const QuizDetailPage(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<QuizController>()) {
+          Get.lazyPut<QuizController>(() => QuizController());
+        }
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.QUIZ_SESSION,
+      page: () => const QuizPlayPage(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<QuizController>()) {
+          Get.lazyPut<QuizController>(() => QuizController());
+        }
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.QUIZ_RESULT,
+      page: () => const QuizResultPage(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<QuizController>()) {
+          Get.lazyPut<QuizController>(() => QuizController());
+        }
+      }),
+    ),
+
+    // ==========================================
+    // ADMIN ROUTES
     // ==========================================
     GetPage(
       name: AppRoutes.ADMIN_QUIZ,
