@@ -17,7 +17,6 @@ class _AdminQuestionPageState extends State<AdminQuestionPage> {
   final _formKey = GlobalKey<FormState>();
   
   // Form controllers
-  final _quizIdController = TextEditingController();
   final _questionTextController = TextEditingController();
   final _explanationController = TextEditingController();
   final _option1Controller = TextEditingController();
@@ -26,6 +25,7 @@ class _AdminQuestionPageState extends State<AdminQuestionPage> {
   final _option4Controller = TextEditingController();
   final _orderController = TextEditingController();
   
+  String? _selectedQuizId;
   String _correctAnswer = 'A';
   String _selectedQuestionType = 'multiple_choice';
   bool _isLoading = false;
@@ -59,7 +59,6 @@ class _AdminQuestionPageState extends State<AdminQuestionPage> {
 
   @override
   void dispose() {
-    _quizIdController.dispose();
     _questionTextController.dispose();
     _explanationController.dispose();
     _option1Controller.dispose();
@@ -73,6 +72,16 @@ class _AdminQuestionPageState extends State<AdminQuestionPage> {
   Future<void> _addQuestion() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_selectedQuizId == null) {
+      Get.snackbar(
+        'Error',
+        'Please select a quiz',
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -85,7 +94,7 @@ class _AdminQuestionPageState extends State<AdminQuestionPage> {
 
       final question = QuestionModel(
         questionId: const Uuid().v4(),
-        quizId: _quizIdController.text.trim(),
+        quizId: _selectedQuizId!,
         type: _selectedQuestionType,
         questionText: _questionTextController.text.trim(),
         options: options,
@@ -150,9 +159,7 @@ class _AdminQuestionPageState extends State<AdminQuestionPage> {
                   children: [
                     // Quiz Selection
                     DropdownButtonFormField<String>(
-                      value: _quizIdController.text.isEmpty
-                          ? null
-                          : _quizIdController.text,
+                      value: _selectedQuizId,
                       decoration: const InputDecoration(
                         labelText: 'Select Quiz',
                         border: OutlineInputBorder(),
@@ -160,13 +167,13 @@ class _AdminQuestionPageState extends State<AdminQuestionPage> {
                         fillColor: Colors.white,
                       ),
                       items: _quizzes
-                          .map((quiz) => DropdownMenuItem(
-                                value: quiz['id'],
-                                child: Text(quiz['title']),
+                          .map<DropdownMenuItem<String>>((quiz) => DropdownMenuItem<String>(
+                                value: quiz['id'] as String,
+                                child: Text(quiz['title'] as String),
                               ))
                           .toList(),
                       onChanged: (value) {
-                        setState(() => _quizIdController.text = value!);
+                        setState(() => _selectedQuizId = value);
                       },
                       validator: (value) {
                         if (value == null || value.isEmpty) {
