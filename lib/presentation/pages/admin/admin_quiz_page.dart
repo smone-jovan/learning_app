@@ -44,7 +44,6 @@ class _AdminQuizPageState extends State<AdminQuizPage> with SingleTickerProvider
 
   @override
   void dispose() {
-    _tabController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
     _categoryController.dispose();
@@ -70,7 +69,6 @@ class _AdminQuizPageState extends State<AdminQuizPage> with SingleTickerProvider
       _isPremium = false;
       _isEditMode = false;
       _editingQuizId = null;
-      _existingCreatedAt = null;
     });
   }
 
@@ -88,8 +86,7 @@ class _AdminQuizPageState extends State<AdminQuizPage> with SingleTickerProvider
       _isPremium = quiz.isPremium;
       _isEditMode = true;
       _editingQuizId = quiz.quizId;
-      _existingCreatedAt = quiz.createdAt; // ✅ Store existing createdAt
-      _tabController.index = 0; // Switch to create/edit tab
+      _selectedTab = 0; // Switch to create/edit tab
     });
   }
 
@@ -100,16 +97,6 @@ class _AdminQuizPageState extends State<AdminQuizPage> with SingleTickerProvider
 
     try {
       final quizId = _isEditMode ? _editingQuizId! : const Uuid().v4();
-      
-      // ✅ FIX: Properly handle createdAt
-      DateTime createdAt;
-      if (_isEditMode && _existingCreatedAt != null) {
-        // Use existing createdAt when editing
-        createdAt = _existingCreatedAt!;
-      } else {
-        // Use current time when creating new
-        createdAt = DateTime.now();
-      }
       
       final quiz = QuizModel(
         quizId: quizId,
@@ -123,7 +110,10 @@ class _AdminQuizPageState extends State<AdminQuizPage> with SingleTickerProvider
         coinsReward: int.tryParse(_coinsRewardController.text) ?? 10,
         totalQuestions: int.tryParse(_totalQuestionsController.text) ?? 10,
         isPremium: _isPremium,
-        createdAt: createdAt,
+        createdAt: _isEditMode 
+            ? (await _firestore.collection('quizzes').doc(quizId).get())
+                .data()?['createdAt'].toDate() ?? DateTime.now()
+            : DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
@@ -140,7 +130,7 @@ class _AdminQuizPageState extends State<AdminQuizPage> with SingleTickerProvider
       );
 
       _clearForm();
-      _tabController.index = 1; // Switch to manage tab
+      setState(() => _selectedTab = 1); // Switch to manage tab
     } catch (e) {
       Get.snackbar(
         'Error',
@@ -249,15 +239,15 @@ class _AdminQuizPageState extends State<AdminQuizPage> with SingleTickerProvider
         backgroundColor: AppColors.primary,
         title: const Text('Admin - Quiz Management'),
         bottom: TabBar(
-          controller: _tabController,
+          onTap: (index) => setState(() => _selectedTab = index),
           tabs: const [
             Tab(text: 'Create/Edit'),
             Tab(text: 'Manage Quizzes'),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: IndexedStack(
+        index: _selectedTab,
         children: [
           _buildCreateEditTab(),
           _buildManageTab(),
