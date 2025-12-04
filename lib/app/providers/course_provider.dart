@@ -1,21 +1,23 @@
-import 'package:learning_app/app/data/services/firestore_service.dart';
-import 'package:learning_app/core/constant/firebase_collections.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:learning_app/app/data/models/course_model.dart';
-import 'package:learning_app/app/data/models/lesson_model.dart';
-import 'package:learning_app/app/data/models/user_progress_model.dart';
-/// Provider untuk course data dari Firestore
+
 class CourseProvider {
-  /// Get all courses
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  /// Get all published courses
   Future<List<CourseModel>> getAllCourses() async {
     try {
-      final docs = await FirestoreService.getCollection(
-        collection: FirebaseCollections.courses,
-        queryBuilder: (query) => query.orderBy('createdAt', descending: true),
-      );
+      final snapshot = await _firestore
+          .collection('courses')
+          .where('isPublished', isEqualTo: true)
+          .orderBy('createdAt', descending: true)
+          .get();
 
-      return docs.map((doc) => CourseModel.fromFirestore(doc)).toList();
+      return snapshot.docs
+          .map((doc) => CourseModel.fromFirestore(doc.data(), doc.id))
+          .toList();
     } catch (e) {
-      print('Error getting courses: $e');
+      print('❌ Error fetching courses: $e');
       return [];
     }
   }
@@ -23,17 +25,14 @@ class CourseProvider {
   /// Get course by ID
   Future<CourseModel?> getCourseById(String courseId) async {
     try {
-      final doc = await FirestoreService.getDocument(
-        collection: FirebaseCollections.courses,
-        docId: courseId,
-      );
+      final doc = await _firestore.collection('courses').doc(courseId).get();
 
-      if (doc != null && doc.exists) {
-        return CourseModel.fromFirestore(doc);
+      if (doc.exists) {
+        return CourseModel.fromFirestore(doc.data()!, doc.id);
       }
       return null;
     } catch (e) {
-      print('Error getting course: $e');
+      print('❌ Error fetching course: $e');
       return null;
     }
   }
@@ -41,71 +40,31 @@ class CourseProvider {
   /// Get courses by category
   Future<List<CourseModel>> getCoursesByCategory(String category) async {
     try {
-      final docs = await FirestoreService.getCollection(
-        collection: FirebaseCollections.courses,
-        queryBuilder: (query) =>
-            query.where('category', isEqualTo: category),
-      );
+      final snapshot = await _firestore
+          .collection('courses')
+          .where('isPublished', isEqualTo: true)
+          .where('category', isEqualTo: category)
+          .orderBy('createdAt', descending: true)
+          .get();
 
-      return docs.map((doc) => CourseModel.fromFirestore(doc)).toList();
+      return snapshot.docs
+          .map((doc) => CourseModel.fromFirestore(doc.data(), doc.id))
+          .toList();
     } catch (e) {
-      print('Error getting courses by category: $e');
+      print('❌ Error fetching courses by category: $e');
       return [];
     }
   }
 
-  /// Get course lessons
-  Future<List<LessonModel>> getCourseLessons(String courseId) async {
-    try {
-      final docs = await FirestoreService.getCollection(
-        collection: FirebaseCollections.lessons,
-        queryBuilder: (query) =>
-            query.where('courseId', isEqualTo: courseId).orderBy('order'),
-      );
-
-      return docs.map((doc) => LessonModel.fromFirestore(doc)).toList();
-    } catch (e) {
-      print('Error getting lessons: $e');
-      return [];
-    }
-  }
-
-  /// Get user progress for course
-  Future<UserProgressModel?> getUserProgress({
-    required String userId,
-    required String courseId,
-  }) async {
-    try {
-      final docs = await FirestoreService.getCollection(
-        collection: FirebaseCollections.userProgress,
-        queryBuilder: (query) => query
-            .where('userId', isEqualTo: userId)
-            .where('courseId', isEqualTo: courseId),
-        limit: 1,
-      );
-
-      if (docs.isNotEmpty) {
-        return UserProgressModel.fromFirestore(docs.first);
-      }
-      return null;
-    } catch (e) {
-      print('Error getting user progress: $e');
-      return null;
-    }
-  }
-
-  /// Save user progress
-  Future<bool> saveUserProgress(UserProgressModel progress) async {
-    try {
-      return await FirestoreService.setDocument(
-        collection: FirebaseCollections.userProgress,
-        docId: progress.progressId,
-        data: progress.toMap(),
-        merge: true,
-      );
-    } catch (e) {
-      print('Error saving user progress: $e');
-      return false;
-    }
+  /// Stream courses (for real-time updates)
+  Stream<List<CourseModel>> streamCourses() {
+    return _firestore
+        .collection('courses')
+        .where('isPublished', isEqualTo: true)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => CourseModel.fromFirestore(doc.data(), doc.id))
+            .toList());
   }
 }
