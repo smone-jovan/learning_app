@@ -19,11 +19,12 @@ class AuthController extends GetxController {
   final Rx<User?> firebaseUser = Rx<User?>(null);
   final Rx<UserModel?> userModel = Rx<UserModel?>(null);
   final RxBool isLoading = false.obs;
-  final RxBool isPasswordHidden = true.obs; // ✅ TAMBAHAN - untuk toggle password visibility
+  final RxBool isPasswordHidden = true.obs;
 
   // Getter untuk current user
   User? get currentUser => firebaseUser.value;
   bool get isAuthenticated => firebaseUser.value != null;
+  bool get isAdmin => userModel.value?.isAdmin ?? false;
 
   @override
   void onInit() {
@@ -48,7 +49,7 @@ class AuthController extends GetxController {
     }
   }
 
-  /// ✅ TAMBAHAN - Toggle password visibility
+  /// Toggle password visibility
   void togglePasswordVisibility() {
     isPasswordHidden.value = !isPasswordHidden.value;
   }
@@ -92,14 +93,20 @@ class AuthController extends GetxController {
   }
 
   /// Create user document in Firestore
-  Future<void> createUserDocument() async {
+  /// 
+  /// [displayName] - Optional display name to use. If not provided, will try to get from
+  /// Firebase Auth currentUser.displayName, and fallback to 'User' if both are null.
+  Future<void> createUserDocument({String? displayName}) async {
     try {
       if (currentUser == null) return;
+
+      // ✅ FIX: Use passed displayName first, then Firebase Auth, then default
+      final userName = displayName ?? currentUser!.displayName ?? 'User';
 
       final newUser = UserModel(
         userId: currentUser!.uid,
         email: currentUser!.email,
-        displayName: currentUser!.displayName ?? 'User',
+        displayName: userName, // ✅ FIX: Use userName with proper fallback
         photoURL: currentUser!.photoURL,
         points: 0,
         coins: 100,
@@ -118,13 +125,13 @@ class AuthController extends GetxController {
           .set(newUser.toMap());
 
       userModel.value = newUser;
-      print('✅ User document created');
+      print('✅ User document created with name: $userName');
     } catch (e) {
       print('❌ Error creating user document: $e');
     }
   }
 
-  /// ✅ TAMBAHAN - SignIn method (alias untuk login)
+  /// SignIn method (alias untuk login)
   Future<void> signIn() async {
     await login(emailController.text.trim(), passwordController.text.trim());
   }
@@ -197,7 +204,7 @@ class AuthController extends GetxController {
     }
   }
 
-  /// ✅ TAMBAHAN - SignUp method
+  /// SignUp method
   Future<void> signUp() async {
     await register(
       emailController.text.trim(),
@@ -239,14 +246,14 @@ class AuthController extends GetxController {
         password: password,
       );
 
-      // Update display name
+      // Update display name in Firebase Auth
       await userCredential.user?.updateDisplayName(name);
       await userCredential.user?.reload();
       
       print('✅ Registration successful: ${userCredential.user?.email}');
       
-      // Create user document
-      await createUserDocument();
+      // ✅ FIX: Pass name parameter directly to createUserDocument
+      await createUserDocument(displayName: name);
       
       // Clear text fields
       emailController.clear();
@@ -316,7 +323,7 @@ class AuthController extends GetxController {
     }
   }
 
-  /// ✅ TAMBAHAN - Reset password
+  /// Reset password
   Future<void> resetPassword(String email) async {
     try {
       if (email.isEmpty) {
