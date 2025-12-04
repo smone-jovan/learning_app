@@ -18,7 +18,10 @@ class QuizPlayPage extends GetView<QuizController> {
       );
     }
 
-    controller.startQuiz(quizId);
+    // ✅ FIX: Schedule startQuiz AFTER build completes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.startQuiz(quizId);
+    });
 
     return WillPopScope(
       onWillPop: () async {
