@@ -235,7 +235,7 @@ class QuizController extends GetxController {
     }
   }
 
-  /// Submit quiz - ✅ UPDATED: Award rewards ONLY on FIRST PASS with detailed logging
+  /// Submit quiz - ✅ UPDATED: Award rewards ONLY on FIRST PASS with detailed logging + reload user data
   Future<void> submitQuiz() async {
     try {
       isLoading.value = true;
@@ -338,6 +338,11 @@ class QuizController extends GetxController {
           if (pointsUpdated && coinsUpdated) {
             print('🎉 REWARDS SUCCESSFULLY UPDATED!');
             print('✅ Total rewards earned: $pointsEarned points, $coinsEarned coins');
+            
+            // ✅ FIX: Reload user data to update UI
+            print('🔄 Reloading user data to refresh UI...');
+            await authController.loadUserData();
+            print('✅ User data reloaded successfully');
           } else {
             print('⚠️ WARNING: Some updates failed - points: $pointsUpdated, coins: $coinsUpdated');
           }
