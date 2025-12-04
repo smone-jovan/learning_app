@@ -16,6 +16,10 @@ import '../../presentation/pages/leaderboard/leaderboard_page.dart';
 import '../../presentation/pages/achievement/achievement_page.dart';
 import '../../presentation/pages/setting/settings_page.dart';
 
+// ✅ Admin pages
+import '../../presentation/pages/admin/admin_quiz_page.dart';
+import '../../presentation/pages/admin/admin_question_page.dart';
+
 // Controllers
 import '../../presentation/controllers/auth_controller.dart';
 import '../../presentation/controllers/gamification_controller.dart';
@@ -97,12 +101,32 @@ class AppPages {
     GetPage(
       name: AppRoutes.ACHIEVEMENTS,
       page: () => const AchievementsPage(),
-      // Binding sudah dipindahkan ke MAIN route
-      // binding: BindingsBuilder(() { ... }),
     ),
     GetPage(
       name: AppRoutes.SETTINGS,
       page: () => const SettingsPage(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<AuthController>()) {
+          Get.lazyPut<AuthController>(() => AuthController());
+        }
+      }),
+    ),
+
+    // ==========================================
+    // ADMIN ROUTES - ✅ BARU
+    // ==========================================
+    GetPage(
+      name: AppRoutes.ADMIN_QUIZ,
+      page: () => const AdminQuizPage(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<AuthController>()) {
+          Get.lazyPut<AuthController>(() => AuthController());
+        }
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.ADMIN_QUESTION,
+      page: () => const AdminQuestionPage(),
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<AuthController>()) {
           Get.lazyPut<AuthController>(() => AuthController());
