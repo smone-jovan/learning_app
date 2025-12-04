@@ -15,6 +15,7 @@ class CourseController extends GetxController {
 
   // Loading state
   final RxBool isLoading = false.obs;
+  final RxBool isRefreshing = false.obs; // 🆕 TAMBAH: For pull-to-refresh
 
   @override
   void onInit() {
@@ -28,8 +29,9 @@ class CourseController extends GetxController {
       isLoading.value = true;
       final allCourses = await _courseProvider.getAllCourses();
       courses.value = allCourses;
+      print('📚 Loaded ${courses.length} courses');
     } catch (e) {
-      print('Error loading courses: $e');
+      print('❌ Error loading courses: $e');
       Get.snackbar(
         'Error',
         'Failed to load courses',
@@ -37,6 +39,24 @@ class CourseController extends GetxController {
       );
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// 🆕 NEW: Refresh courses (for pull-to-refresh)
+  Future<void> refreshCourses() async {
+    try {
+      isRefreshing.value = true;
+      await loadCourses();
+      Get.snackbar(
+        'Success',
+        'Courses refreshed',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: Duration(seconds: 2),
+      );
+    } catch (e) {
+      print('❌ Error refreshing courses: $e');
+    } finally {
+      isRefreshing.value = false;
     }
   }
 
