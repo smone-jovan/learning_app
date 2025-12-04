@@ -219,7 +219,23 @@ class QuizController extends GetxController {
     }
   }
 
-  /// Submit quiz
+  /// ✅ NEW: Check if user has ever passed this quiz before
+  Future<bool> hasEverPassedQuiz(String userId, String quizId) async {
+    try {
+      final attempts = await _quizProvider.getUserQuizAttempts(
+        userId: userId,
+        quizId: quizId,
+      );
+      
+      // Check if any previous attempt has isPassed = true
+      return attempts.any((attempt) => attempt.isPassed == true);
+    } catch (e) {
+      print('Error checking previous passes: $e');
+      return false;
+    }
+  }
+
+  /// Submit quiz - ✅ UPDATED: Award rewards ONLY on FIRST PASS
   Future<void> submitQuiz() async {
     try {
       isLoading.value = true;
@@ -252,9 +268,6 @@ class QuizController extends GetxController {
 
       final isPassed = score >= quiz.passingScore;
 
-      final pointsEarned = isPassed ? quiz.pointsReward : 0;
-      final coinsEarned = isPassed ? quiz.coinsReward : 0;
-
       final authController = Get.find<AuthController>();
       final user = authController.currentUser;
 
@@ -262,6 +275,15 @@ class QuizController extends GetxController {
         Get.snackbar('Error', 'User not authenticated');
         return;
       }
+
+      // ✅ NEW: Check if user has passed this quiz before
+      final hasPassedBefore = await hasEverPassedQuiz(user.uid, quiz.quizId);
+      
+      // ✅ NEW: Award rewards ONLY if passing for the FIRST TIME
+      final bool shouldAwardRewards = isPassed && !hasPassedBefore;
+      
+      final pointsEarned = shouldAwardRewards ? quiz.pointsReward : 0;
+      final coinsEarned = shouldAwardRewards ? quiz.coinsReward : 0;
 
       final attempt = QuizAttemptModel(
         attemptId: const Uuid().v4(),
@@ -282,7 +304,8 @@ class QuizController extends GetxController {
 
       await _quizProvider.saveQuizAttempt(attempt);
 
-      if (isPassed) {
+      // ✅ NEW: Update user stats ONLY if rewards are awarded
+      if (shouldAwardRewards) {
         await _userRepository.updatePoints(
           userId: user.uid,
           points: pointsEarned,
@@ -291,6 +314,10 @@ class QuizController extends GetxController {
           userId: user.uid,
           coins: coinsEarned,
         );
+        
+        print('✅ REWARDS EARNED: $pointsEarned points, $coinsEarned coins');
+      } else if (isPassed && hasPassedBefore) {
+        print('ℹ️ Quiz passed, but rewards already claimed on first pass');
       }
 
       // ✅ Use Get.off instead of Get.offNamed to keep MainPage stack
@@ -299,6 +326,7 @@ class QuizController extends GetxController {
         arguments: {
           'attempt': attempt,
           'quiz': quiz,
+          'isFirstTimePass': shouldAwardRewards, // ✅ NEW: Track if this is first-time pass
         },
         routeName: AppRoutes.QUIZ_RESULT,
       );
