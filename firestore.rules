@@ -46,19 +46,21 @@ service cloud.firestore {
     }
     
     // ==========================================
-    // QUIZZES COLLECTION
+    // QUIZZES COLLECTION - ⚠️ TEMPORARILY OPEN FOR DEV
     // ==========================================
     match /quizzes/{quizId} {
       allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
+      // TODO: Change back to isAdmin() after setting admin users
+      allow create, update, delete: if isAuthenticated(); // ⚠️ DEV ONLY
     }
     
     // ==========================================
-    // QUESTIONS COLLECTION
+    // QUESTIONS COLLECTION - ⚠️ TEMPORARILY OPEN FOR DEV
     // ==========================================
     match /questions/{questionId} {
       allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
+      // TODO: Change back to isAdmin() after setting admin users
+      allow create, update, delete: if isAuthenticated(); // ⚠️ DEV ONLY
     }
     
     // ==========================================
@@ -76,22 +78,15 @@ service cloud.firestore {
     }
     
     // ==========================================
-    // QUIZ ATTEMPTS - ✅ FIXED
+    // QUIZ ATTEMPTS
     // ==========================================
     match /quiz_attempts/{attemptId} {
-      // User bisa read attempts mereka sendiri atau admin bisa read semua
       allow read: if isAuthenticated() && 
                      (resource.data.userId == request.auth.uid || isAdmin());
-      
-      // User bisa create attempt untuk diri sendiri
       allow create: if isAuthenticated() && 
                        request.resource.data.userId == request.auth.uid;
-      
-      // User bisa update attempt mereka sendiri
       allow update: if isAuthenticated() && 
                        resource.data.userId == request.auth.uid;
-      
-      // Only admin can delete attempts
       allow delete: if isAdmin();
     }
     
