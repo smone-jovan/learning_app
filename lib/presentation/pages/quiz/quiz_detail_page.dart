@@ -22,8 +22,11 @@ class QuizDetailPage extends GetView<QuizController> {
       );
     }
 
-    // Load quiz details
-    controller.loadQuizDetail(quizId);
+    // ✅ FIX: Load quiz details di initState, BUKAN di build()
+    // Gunakan WidgetsBinding.addPostFrameCallback
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.loadQuizDetail(quizId);
+    });
 
     return Scaffold(
       backgroundColor: AppColors.cream,
