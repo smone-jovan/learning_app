@@ -12,24 +12,7 @@ class HomePage extends GetView<HomeController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.cream,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        title: const Text('Learning Hub'),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: controller.navigateToNotifications,
-            tooltip: 'Notifications',
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: controller.navigateToSettings,
-            tooltip: 'Settings',
-          ),
-        ],
-      ),
+      // ❌ HAPUS AppBar - sudah ada di MainPage
       body: Obx(
         () => controller.isLoading.value
             ? _buildLoadingState()
