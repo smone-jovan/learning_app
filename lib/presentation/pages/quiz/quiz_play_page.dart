@@ -144,7 +144,10 @@ class QuizPlayPage extends GetView<QuizController> {
   }
 
   Widget _buildOptions(dynamic question) {
-    switch (question.type) {
+    // 🆕 FIX: Get type, default to 'multiple_choice' if null/empty
+    final questionType = question.type?.toString().toLowerCase() ?? 'multiple_choice';
+    
+    switch (questionType) {
       case 'multiple_choice':
         final options = question.options as List<dynamic>? ?? [];
         return Column(
@@ -245,27 +248,88 @@ class QuizPlayPage extends GetView<QuizController> {
         );
 
       case 'text_input':
+      case 'short_answer': // 🆕 TAMBAH: Support short_answer
         return Obx(() {
           final textController = TextEditingController(
             text: controller.userAnswers[question.questionId] ?? '',
           );
-          return TextField(
-            controller: textController,
-            onChanged: (value) {
-              controller.selectAnswer(question.questionId, value);
-            },
-            decoration: InputDecoration(
-              hintText: 'Type your answer here...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+          // 🆕 FIX: Set cursor to end
+          textController.selection = TextSelection.fromPosition(
+            TextPosition(offset: textController.text.length),
+          );
+          
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.textSecondary.withOpacity(0.2),
               ),
             ),
-            maxLines: 3,
+            child: TextField(
+              controller: textController,
+              onChanged: (value) {
+                controller.selectAnswer(question.questionId, value);
+              },
+              decoration: const InputDecoration(
+                hintText: 'Type your answer here...',
+                border: InputBorder.none,
+                hintStyle: TextStyle(
+                  color: Colors.grey,
+                ),
+              ),
+              style: Get.textTheme.bodyLarge,
+              maxLines: questionType == 'short_answer' ? 3 : 1, // 🆕 Multi-line for short_answer
+              textCapitalization: TextCapitalization.sentences,
+            ),
           );
         });
 
       default:
-        return const Text('Unknown question type');
+        // 🆕 FIX: Default fallback dengan TextField untuk unknown types
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.textSecondary.withOpacity(0.2),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Unknown question type: $questionType',
+                style: Get.textTheme.bodySmall?.copyWith(
+                  color: AppColors.warning,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Obx(() {
+                final textController = TextEditingController(
+                  text: controller.userAnswers[question.questionId] ?? '',
+                );
+                textController.selection = TextSelection.fromPosition(
+                  TextPosition(offset: textController.text.length),
+                );
+                
+                return TextField(
+                  controller: textController,
+                  onChanged: (value) {
+                    controller.selectAnswer(question.questionId, value);
+                  },
+                  decoration: const InputDecoration(
+                    hintText: 'Type your answer here...',
+                    border: InputBorder.none,
+                  ),
+                  maxLines: 3,
+                );
+              }),
+            ],
+          ),
+        );
     }
   }
 
