@@ -9,7 +9,7 @@ import 'app/data/services/local_storage_services.dart';
 import 'core/theme/app_theme.dart';
 import 'app/data/seeds/seed_runner.dart';
 import 'presentation/controllers/auth_controller.dart';
-import 'presentation/controllers/settings_controller.dart'; // ✅ ADDED
+import 'presentation/controllers/settings_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,7 +23,7 @@ void main() async {
   // Initialize AuthController as permanent
   Get.put(AuthController(), permanent: true);
 
-  // ✅ Initialize SettingsController as permanent
+  //  Initialize SettingsController as permanent
   Get.put(SettingsController(), permanent: true);
 
   // Seed data hanya jalan jika user sudah login
@@ -39,16 +39,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Get SettingsController
+    // Get SettingsController
     final settingsController = Get.find<SettingsController>();
 
     return Obx(() => GetMaterialApp(
-          // ✅ Wrap dengan Obx untuk reactive theme
+          // Wrap dengan Obx untuk reactive theme
           title: 'Learning App',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
-          themeMode: settingsController.themeMode.value, // ✅ Dynamic theme
+          themeMode: settingsController.themeMode.value, //  Dynamic theme
 
           // Initial route
           initialRoute: _getInitialRoute(),
